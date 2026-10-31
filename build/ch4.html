@@ -1,0 +1,65 @@
+<section class="chapter" id="ch4">
+  <div class="ch-head">
+    <div class="ch-num"><b>04</b>CHAPTER<br/>19:40</div>
+    <div class="ch-title">
+      <h2>WebSocket：全双工的电话</h2>
+      <p>一次握手借道 HTTP，之后两头随时开口——会打断的对话才像对话</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">SSE 是广播，HTTP 是普通话，但真人对话是<strong>两个人同时在线、谁都能随时开口</strong>。要这种效果，就需要 WebSocket：2011 年定稿的 RFC 6455，给 Web 补上的那部全双工电话。</p>
+
+    <h3>借 HTTP 的门，进 TCP 的屋</h3>
+    <p>WebSocket 的开场白是一次长得像 HTTP 的请求——但带着一句黑话：</p>
+    <div class="code"><div class="code-bar"><b>握手报文 · GET /ws</b><span>HTTP/1.1 101 Switching Protocols</span></div>
+<pre>GET /ws HTTP/1.1
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</pre></div>
+    <p>从 101 那一行起，这条连接就<strong>不再是 HTTP 了</strong>：双方降下 HTTP 的语法，改说 WebSocket 的帧。同一条 TCP 连接上，两头都可以随时发帧、随时收帧，不必再「一问一答」。建立连接贵，但建立之后每帧的头上只有 2–10 字节——HTTP 报文光 header 就常以百字节计。这就是为什么语音、游戏、协同编辑这类高频小消息的场景，全都要它。</p>
+
+    <h3>全双工的价值：能打断</h3>
+    <p>想一个问题：你对语音助手说了半句话，突然改主意，它该不该停下来听？真人会停，<strong>半双工的系统做不到</strong>——HTTP 的世界里，回答一旦开始，你的新输入只能等下一轮请求；全双工的世界里，你的插话作为新帧<strong>当场送达</strong>，对面的生成逻辑可以立刻改道。这就是「barge-in，打断」——所有语音产品体验的分水岭。语音助手普遍选择 WebSocket（比如 OpenAI 的 Realtime API 走的就是它），不是偶然：音频帧需要高频双向流动，还要能打断。</p>
+
+    <div class="demo" id="demo3">
+      <div class="demo-head">
+        <span class="demo-tag">DEMO 03 / WEBSOCKET</span>
+        <span class="demo-title">双工对讲机<span class="hint">同一段对话，半双工和全双工各过一遍</span></span>
+      </div>
+      <div class="demo-body">
+        <div class="controls">
+          <div class="ctl"><label>通话制式</label>
+            <div class="seg" id="d3-mode" role="group" aria-label="通话制式">
+              <button data-mode="half" aria-pressed="true">HTTP · 半双工</button>
+              <button data-mode="full" aria-pressed="false">WS · 全双工</button>
+            </div>
+          </div>
+          <div class="ctl"><label class="switch"><input type="checkbox" id="d3-heart"/>心跳保活（每 3 秒一拍 PING/PONG）</label></div>
+          <div class="ctl ctl-btn"><button class="run" id="d3-run">开始通话</button><button class="ghost" id="d3-cut" disabled>模拟断线</button></div>
+        </div>
+        <div class="dtx">
+          <div class="dtx-ruler" id="d3-ruler"><span>0s</span><span>1s</span><span>2s</span><span>3s</span><span>4s</span><span>5s</span><span>6s</span><span>7s</span></div>
+          <div class="dtx-lane"><div class="dtx-name">你</div><div class="dtx-row" id="d3-row-you"></div></div>
+          <div class="dtx-lane"><div class="dtx-name">小晴</div><div class="dtx-row" id="d3-row-ai"></div></div>
+          <div class="dtx-lane dtx-ctrl"><div class="dtx-name">线路</div><div class="dtx-row" id="d3-row-ctl"></div></div>
+        </div>
+        <div class="big-num" id="d3-nums">
+          <div>通话总时长<b id="d3-na">—</b></div>
+          <div>插话被接收<b id="d3-nb">—</b></div>
+          <div>答案完整度<b id="d3-nc">—</b></div>
+        </div>
+        <p class="hintline" id="d3-note">剧本：你先说需求，第 1.5 秒插话「还有紫外线指数吗」。看两种制式分别怎么接。</p>
+      </div>
+      <div class="demo-foot"><b>确定性模型</b>：块的位置按剧本节拍推演。全双工制式下先点「开始通话」再点「模拟断线」——注意重连之后，断线期间的帧不会自动补发，状态要自己同步：这正是它和 SSE 内建续传的关键差别。</div>
+    </div>
+
+    <h3>自由的代价清单</h3>
+    <p>WebSocket 给了双工自由，账单也来了：<strong>中间设施不再天然友好</strong>（老代理和某些企业网关会掐断 Upgrade 握手）；<strong>断线要自己管</strong>——协议层留了 ping/pong 控制帧用来探活，但应用层的心跳节奏、重连退避、断线期间的消息补偿，全是应用自己的事；<strong>没有 HTTP 缓存生态</strong>可借力。所以它不是「更高级」的选项，是<strong>为实时性付账</strong>的选项。需求里没有「同时、双向、高频」，就别请它出场。</p>
+
+    <p>三条线都见过了：普通话、广播、电话。真到设计系统的时候怎么选？下一章不开课，开庭。</p>
+  </div>
+</section>

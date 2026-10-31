@@ -1,0 +1,60 @@
+<section class="chapter" id="ch5">
+  <div class="ch-head">
+    <div class="ch-num"><b>05</b>CHAPTER<br/>26:20</div>
+    <div class="ch-title">
+      <h2>选型法庭</h2>
+      <p>六道场景题当场判分——以及为什么高级答案通常不是「三选一」</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">先把三条线的「户口」摆在一张桌上，再开庭。</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>维度</th><th>RESTful API</th><th>SSE</th><th>WebSocket</th></tr></thead>
+        <tbody>
+          <tr><td><b>方向</b></td><td>一问一答</td><td>服务器 → 客户端，单向</td><td>双向同时</td></tr>
+          <tr><td><b>连接寿命</b></td><td>答完即断</td><td>一条响应流，可长可短</td><td>一次握手，长期会话</td></tr>
+          <tr><td><b>基础设施</b></td><td class="ok">全家欢迎</td><td class="ok">同为 HTTP，全家欢迎</td><td class="warn">老代理/网关可能拦 Upgrade</td></tr>
+          <tr><td><b>断线恢复</b></td><td>重发即可</td><td class="ok">内建：自动重连 + Last-Event-ID 续传</td><td class="warn">自管心跳、重连与补偿</td></tr>
+          <tr><td><b>每条消息开销</b></td><td>整份报文，header 以百字节计</td><td>每事件一行 <code>data:</code> + 空行</td><td class="ok">帧头仅 2–10 字节</td></tr>
+          <tr><td><b>典型场景</b></td><td>工具调用、查询、表单</td><td>流式回答、进度推送</td><td>语音、协同、实时游戏</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>表背不背得下来不重要，重要的是手感。下面六道题，读完场景凭手感判——选完立刻出判决和理由。允许错，错了比背书有用。</p>
+
+    <div class="demo" id="demo4">
+      <div class="demo-head">
+        <span class="demo-tag">DEMO 04 / 选型</span>
+        <span class="demo-title">选型法庭<span class="hint">六道题，答完即判，可反复</span></span>
+      </div>
+      <div class="demo-body">
+        <div class="court">
+          <div class="court-main">
+            <p class="court-no" id="d4-no">案件 1 / 6</p>
+            <p class="court-title" id="d4-title">—</p>
+            <p class="court-desc" id="d4-desc">—</p>
+            <div class="court-btns" id="d4-btns">
+              <button data-p="rest">REST</button>
+              <button data-p="sse">SSE</button>
+              <button data-p="ws">WebSocket</button>
+            </div>
+            <p class="court-q">你的判断：这是哪条线的活？</p>
+          </div>
+          <div class="court-side">
+            <div class="court-score"><b id="d4-score">0</b><small>累计得分 / 满分 12</small></div>
+            <div class="court-verdict" id="d4-verdict">选一条，判决马上到。</div>
+            <button class="ghost" id="d4-next" disabled>下一案 →</button>
+          </div>
+        </div>
+      </div>
+      <div class="demo-foot"><b>判分规则</b>：最优答案 2 分，可行但杀鸡用牛刀 1 分，答错 0 分。判决里会给出真实世界的参照物。</div>
+    </div>
+
+    <h3>高级答案：不是三选一，是三段接力</h3>
+    <p>六道题做完，回头看第 1 章那张接力图，会发现<strong>小晴一次服务里三条线全用了</strong>：进来的查询和出去的工具调用是 REST，流出去的回答是 SSE，语音形态的对话是 WebSocket。真实的 Agent 系统就是这样一座三线机房——<strong>选型不是选一个协议，是给每一段交互找到它的线</strong>。面试里能把这一点说清楚的人，比背出三个定义的人值钱得多。</p>
+    <p>空谈到此为止。下一章把这座机房真的盖出来——一个 Python 文件，三种端点，一条命令跑起来。</p>
+  </div>
+</section>

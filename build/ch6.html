@@ -1,0 +1,75 @@
+<section class="chapter" id="ch6">
+  <div class="ch-head">
+    <div class="ch-num"><b>06</b>CHAPTER<br/>33:00</div>
+    <div class="ch-title">
+      <h2>一个文件，三种端点</h2>
+      <p>把三条信号线装进同一份 FastAPI：/v1/weather、/ask/stream、/ws，一条命令起机房</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">现在兑现承诺：小晴的信号机房，整个后端就是一个 Python 文件。三种协议各占一个函数，REST 三个装饰器里最不起眼，却撑着另外两个的地基。</p>
+
+    <div class="code"><div class="code-bar"><b>signal_room.py</b><span>FastAPI · 完整可跑 · uvicorn signal_room:app --reload</span></div>
+<pre><span class="k">from</span> fastapi <span class="k">import</span> FastAPI, WebSocket
+<span class="k">from</span> fastapi.responses <span class="k">import</span> StreamingResponse
+<span class="k">import</span> asyncio, json, httpx
+
+app = FastAPI()
+
+<span class="c"># ── 第一棒 · REST：工具调用的入口（第 2 章）──────────</span>
+<span class="f">@app.get</span>(<span class="s">"/v1/weather"</span>)
+<span class="k">async def</span> <span class="n">weather</span>(city: <span class="n">str</span>):
+    <span class="k">async with</span> httpx.AsyncClient() <span class="k">as</span> client:
+        r = <span class="k">await</span> client.get(UPSTREAM, params={<span class="s">"city"</span>: city})
+        <span class="k">if</span> r.status_code == <span class="n">429</span>:                     <span class="c"># 礼貌：听 Retry-After 的</span>
+            <span class="k">await</span> asyncio.sleep(<span class="n">int</span>(r.headers.get(<span class="s">"Retry-After"</span>, <span class="s">"5"</span>)))
+            r = <span class="k">await</span> client.get(UPSTREAM, params={<span class="s">"city"</span>: city})
+        r.raise_for_status()
+    data = r.json()
+    <span class="k">return</span> {<span class="s">"city"</span>: city, <span class="s">"temp"</span>: data[<span class="s">"temp"</span>], <span class="s">"wind"</span>: data[<span class="s">"wind"</span>]}
+
+<span class="c"># ── 第二棒 · SSE：回答流出去（第 3 章）─────────────</span>
+<span class="f">@app.get</span>(<span class="s">"/ask/stream"</span>)
+<span class="k">async def</span> <span class="n">ask_stream</span>(q: <span class="n">str</span>):
+    <span class="k">async def</span> <span class="n">gen</span>():
+        <span class="k">async for</span> chunk <span class="k">in</span> llm_stream(q):            <span class="c"># 逐 token 生成</span>
+            <span class="k">yield</span> <span class="s">f"data: {json.dumps({'delta': chunk}, ensure_ascii=False)}\n\n"</span>
+        <span class="k">yield</span> <span class="s">"data: [DONE]\n\n"</span>
+    <span class="k">return</span> StreamingResponse(gen(), media_type=<span class="s">"text/event-stream"</span>)
+
+<span class="c"># ── 第三棒 · WebSocket：能打断的语音对话（第 4 章）────</span>
+<span class="f">@app.websocket</span>(<span class="s">"/ws"</span>)
+<span class="k">async def</span> <span class="n">voice</span>(sock: WebSocket):
+    <span class="k">await</span> sock.accept()                               <span class="c"># 101 握手在这里完成</span>
+    <span class="k">try</span>:
+        <span class="k">while</span> <span class="n">True</span>:
+            msg = <span class="k">await</span> sock.receive_text()           <span class="c"># 用户帧：说到一半也能来</span>
+            <span class="k">async for</span> chunk <span class="k">in</span> llm_stream(msg):
+                <span class="k">await</span> sock.send_text(chunk)           <span class="c"># 回答帧：边生成边发</span>
+    <span class="k">except</span> Exception:
+        <span class="k">pass</span>                                          <span class="c"># 断线清理；重连是客户端的事</span></pre></div>
+
+    <h3>三个函数，三种性格</h3>
+    <p>同一份代码里，三种协议的性格差一目了然：<strong>REST 端点最短</strong>，进去、拿数据、<code>return</code>，连接由框架收尾；<strong>SSE 端点是一个生成器</strong>——<code>yield</code> 一段就送一段，框架负责把每段标上 <code>data:</code> 和空行，<code>media_type="text/event-stream"</code> 就是那条传送带的出厂铭牌；<strong>WebSocket 端点是一个循环</strong>——<code>accept()</code> 之后连接一直活着，<code>while True</code> 里来一帧答一帧，是唯一需要你自己管生命周期的。</p>
+    <p>注意第 14 行那个 <code>if r.status_code == 429</code>：第 2 章说的「礼貌是协议的一部分」，落地就是这一行——读 <code>Retry-After</code>，睡够，再试。面试时聊到可靠性，能随手写出这三行的人不多。</p>
+
+    <h3>这份文件背后的 Python 清单</h3>
+    <p>JD 里「熟悉基本语法和常用库」的那张清单，其实就是这几个名字：</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>库</th><th>在这份文件里干的活</th><th>一句话记法</th></tr></thead>
+        <tbody>
+          <tr><td><code>fastapi</code></td><td>三种端点的骨架，异步原生</td><td>信号机房的房体</td></tr>
+          <tr><td><code>uvicorn</code></td><td>ASGI 服务器，负责真的跑起来</td><td>机房的电闸</td></tr>
+          <tr><td><code>httpx</code></td><td>发上游 REST 请求，带 <code>await</code></td><td>requests 的异步继任者</td></tr>
+          <tr><td><code>pydantic</code></td><td>参数与响应的类型校验（FastAPI 内建依赖）</td><td>门口的安检仪</td></tr>
+          <tr><td><code>websockets</code></td><td>客户端侧连 WS 时用（服务端 FastAPI 已带）</td><td>给 Agent 装电话听筒</td></tr>
+          <tr><td><code>asyncio</code></td><td><code>await</code>/<code>async</code> 的引擎：等请求时让出 CPU 去接别人</td><td>一个服务员看十桌的能力</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><b>为什么满篇 async</b>：对话服务的典型负载是「大量连接、各自等慢 IO」——等模型吐字、等上游 API。同步代码一个请求占一个线程，等着也是干等；异步代码等待时把服务员让出来服务别人。<strong>通信密集型服务的 Python，绕不开 async</strong>，这也是 JD 把「基本语法」和「通信方法」写在一句话里的深层原因。</p>
+
+    <p>机房盖完了。最后一章不写代码，写你怎么把它变成自己的东西。</p>
+  </div>
+</section>

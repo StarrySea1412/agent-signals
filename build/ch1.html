@@ -1,0 +1,60 @@
+<section class="chapter" id="ch1">
+  <div class="ch-head">
+    <div class="ch-num"><b>01</b>CHAPTER<br/>00:00</div>
+    <div class="ch-title">
+      <h2>一行 JD 的分量</h2>
+      <p>为什么 AI 岗位不先问模型，先问通信——把第②条要求拆成三段，看每一段到底在考什么</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">把第②条要求横过来竖着读，其实是三句话：<strong>Python 是必需的</strong>；<strong>语法和常用库要熟</strong>；<strong>三种通信方法要懂</strong>。三句话的分量完全不同——第一句是站队，第二句是体能，第三句是真正的护城河。</p>
+
+    <h3>第一段：为什么偏偏是 Python</h3>
+    <p>不是 Python 比 Go 快，也不是它比 TypeScript 优雅。是<strong>重力</strong>。整个 AI 工具链的质量中心在 Python 上：模型侧的 transformers、vLLM，编排侧的 LangChain，还有各家模型公司的官方 SDK——Python 版几乎总是第一顺位发布、文档最全、社区最吵的那一个。你要接一个新模型，它的 README 第一行代码示例多半就是 <code>pip install</code> 开头。</p>
+    <p>这对 Agent 开发者意味着一件很实际的事：<strong>任何新能力，从发布到你能用，Python 的距离最短。</strong>别人还在等官方的 Rust 客户端，你已经在报 issue 了。重力不是优点，但重力决定了水往哪流。</p>
+
+    <h3>第二段：语法和常用库，是体能不是卖点</h3>
+    <p>「熟悉基本语法和常用库」听起来像客套话，其实是面试里最快的筛子。virtualenv 为什么存在、<code>pip</code> 和 <code>uv</code> 的区别、<code>async</code>/<code>await</code> 到底在等什么、<code>pydantic</code> 为什么成了所有 LLM SDK 的地基——这些不拉开差距，但缺一样都会当场掉队。本文第 6 章的代码会把这张清单过一遍。</p>
+
+    <h3>第三段：通信方法，Agent 的嘴和耳朵</h3>
+    <p>现在说重点。一个 Agent 的标准工作回路是：<strong>听用户说话 → 模型思考 → 决定调哪个工具 → 拿到工具结果 → 模型再思考 → 说出回答</strong>。七步里，第 3、4 步是模型发出去的 HTTP 请求，第 1、6 步是它收发文字的通道。回路七步，四步在通信。</p>
+    <p>所以这行 JD 真正在说的是：<strong>你会调模型，只是会想；你会通信，才是会说。</strong>面试官不担心你不会写 prompt——prompt 是可以背的；他担心的是你接不住流、认不出 429、分不清什么时候该用 WebSocket——这些背不会，只能见过。</p>
+
+    <div class="fig">
+      <div class="frame relay-frame">
+        <p class="relay-cap">FIG. 01 · 一次服务的接力全景——同一段回答，三种协议各跑一棒</p>
+        <div class="relay">
+          <div class="relay-node">
+            <i>你</i>
+            <b>「北京今天适合跑步吗？」</b>
+            <small>一句话进来，带着后续追问</small>
+          </div>
+          <div class="relay-arrow down" data-label="入口"><span>Web / App</span></div>
+          <div class="relay-track">
+            <div class="relay-leg leg-rest">
+              <b>第一棒 · REST</b>
+              <p>模型决定调工具：<code>get_weather("beijing")</code> 发出一次标准请求，拿到完整数据，连接即断。</p>
+              <small>→ 第 2 章</small>
+            </div>
+            <div class="relay-leg leg-sse">
+              <b>第二棒 · SSE</b>
+              <p>模型开始回答。不是憋一整段再发，而是一个词一个词往外流——你看到的打字机效果。</p>
+              <small>→ 第 3 章</small>
+            </div>
+            <div class="relay-leg leg-ws">
+              <b>第三棒 · WebSocket</b>
+              <p>如果换语音对话：两头同时开口、说到一半能打断——这就换电话上场。</p>
+              <small>→ 第 4 章</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption><span><b>FIG. 01</b> 三条线不是三选一，是一段服务里的三段接力</span><span>贯穿全文的地图</span></figcaption>
+    </div>
+
+    <p>这三种「方式」不是并列的三个知识点，而是<strong>同一次服务里的三段接力</strong>：REST 把外面的数据拿进来，SSE 把回答流出去，WebSocket 承接实时形态。后文全程只用一个例子——一个只查天气的小 Agent，代号<strong>小晴</strong>——让同一条消息「北京今天适合跑步吗」在三条线上各走一遍完整的一生。</p>
+    <p>先从最老、也最不会让你失业的那条线开始。</p>
+
+    <div class="pull">模型决定 Agent 能想多远，<b>协议决定 Agent 能走多近。</b></div>
+  </div>
+</section>

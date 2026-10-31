@@ -1,0 +1,72 @@
+<header class="wrap masthead">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="13" width="18" height="7" rx="1.5" stroke="#62e6a4" stroke-width="1.4"/><path d="M6 9.5h3l2-4 2 8 2-4h3" stroke="#e5b566" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="6" cy="16.5" r="1" fill="#62e6a4"/></svg></span>
+    <span>造物手记 <small>VOL.08</small></span>
+  </div>
+  <div class="edition">
+    <span class="pack"><i class="pack-dot" aria-hidden="true"></i>SIGNAL / 调频中</span>
+    <span>SIGNAL STATION 08 · 2026.10</span>
+  </div>
+</header>
+
+<section class="wrap hero">
+  <div>
+    <p class="eyebrow"><span>FIELD NOTES</span>三种协议，一条命脉</p>
+    <h1>Agent 的<br/><em>三条信号线</em><span class="sub">REST、SSE、WebSocket——一行招聘要求背后的通信解剖学，和一条消息走完三种协议的完整一生</span></h1>
+    <div class="dek-wrap">
+      <p class="dek-tag">本片提要</p>
+      <p class="dek">翻到一份 AI 岗位的招聘要求，第二条不是问模型、不是问提示词，而是「熟练掌握 Python，熟悉 SSE、WebSocket 和 Restful Api 通信方法」。这句话值得逐字拆开：Agent 的智能住在模型里，但 Agent 的能力住在通信里。这篇用同一个查天气的 Agent，把一条消息放进三条协议里各走一遍——逐字节看报文，逐毫秒看时序，最后把它们装进同一个 Python 文件。</p>
+    </div>
+    <div class="hero-meta">
+      <span class="pill"><b>3</b> 条信号线</span>
+      <span class="pill"><b>4</b> 枚可玩小样</span>
+      <span class="pill"><b>1</b> 个文件 · 3 种端点</span>
+      <span class="pill">RFC 6455 · <b>2011</b></span>
+    </div>
+  </div>
+  <figure class="art">
+    <div class="screen">
+      <div class="screen-img">
+        <img src="assets/art/hero.webp" alt="折纸鸟站在深夜信号站的木桌前调试一台老式示波器，屏幕上三条荧光绿波形：断续脉冲、单向流波与双向正弦波" width="1152" height="832"/>
+      </div>
+      <div class="tc-bar"><span>SIGNAL BENCH 08</span><span class="tc">REST · SSE · WS</span></div>
+    </div>
+    <figcaption><span><b>FIG. 00</b> 信号机房：三条波形同时在线，折纸鸟在调第三条</span><span>INK &amp; GOUACHE / 2026</span></figcaption>
+  </figure>
+</section>
+
+<section class="stats" aria-label="关键数字">
+  <div class="wrap stats-inner">
+    <div class="stat"><b>3<span>条</span></b><small>信号线：REST · SSE · WebSocket</small></div>
+    <div class="stat"><b>4<span>枚</span></b><small>确定性小样：解剖台 / 竞速台 / 对讲机 / 选型法庭</small></div>
+    <div class="stat"><b>1<span>个文件</span></b><small>FastAPI 同时挂三种端点（第 6 章实装）</small></div>
+    <div class="stat"><b>35<span>年</span></b><small>HTTP 的服役年龄（1991–2026）</small></div>
+  </div>
+</section>
+
+<div class="wrap opening">
+  <div class="prose">
+    <div class="jd-card">
+      <p class="jd-tag">JOB DESCRIPTION · 某 AI 应用开发岗 · 要求第 ② 条（原文如此）</p>
+      <p class="jd-text">「熟练掌握<em>Python</em>技术（必需），熟悉基本语法和常用库，熟悉<em>SSE</em>，<em>WebSocket</em>和<em>Restful Api</em>通信方法」</p>
+      <p class="jd-note">——顺带说一句，「Restful」是业内最常见的误写，规范写法是 RESTful。不影响它是条好要求；恰好相反，它比很多空谈「精通大模型」的 JD 诚实得多。</p>
+    </div>
+    <p class="lead">第一次认真读这行字，是帮朋友改简历的时候。他想投 AI 应用开发，简历上写满了自己调过哪些模型、写过多少提示词。我把这行 JD 发给他，问：SSE 是什么，答不上来；WebSocket 和 HTTP 的区别，含糊；Restful 的「资源」指什么，没概念。他问我：这些都是小东西吧，模型才是大头？</p>
+    <p>我说反了。<strong>模型是 Agent 的脑子，通信是 Agent 的嘴和耳朵。</strong>脑子再好，嘴张不开，它就只是一个孤岛上的思考者——想得再对，也拿不到天气数据、听不到用户后半句话、发不出一个字。一份「会查天气的 Agent」的实际构成是：大约一成的智能在模型调用里，剩下九成的工程在通信里——请求怎么发、流怎么接、断了怎么重连。</p>
+    <p>而这行 JD 列的三样东西，恰好是 Agent 和世界说话的全部三种方式：<strong>RESTful API 是普通话</strong>，一问一答，句句完整；<strong>SSE 是单向的广播线</strong>，服务器只管说，客户端只管听——你看到的每一个「打字机效果」，底下都是它；<strong>WebSocket 是全双工的电话</strong>，两头同时开口，谁也不用等谁。</p>
+    <p>这篇的走法很克制：全程只用一个 Agent——一个只查天气的小服务——让<em>同一条消息</em>在三条协议里各走一遍完整的一生。不背概念，直接看报文、看时序、看代码。三种协议不是三个知识点，是一套分工。</p>
+    <p class="scope">阅读说明：全文约九千字，七章 + 四枚小样。第 1 章拆这行 JD 的分量；第 2 章走 RESTful，附报文解剖台；第 3 章解剖 SSE 与打字机效果，附首字竞速台；第 4 章走 WebSocket，附双工对讲机；第 5 章是选型法庭，六道场景题当场判分；第 6 章把三种端点装进同一个 FastAPI 文件；第 7 章收束成可演示的三件事。四枚小样全部是确定性模型：参数可调、行为可复现，不含随机数。</p>
+  </div>
+
+  <p class="toc-head"><span>SIGNAL INDEX / 波形清单</span><span>07 SECTIONS · 04 DEMOS</span></p>
+  <nav class="toc" aria-label="目录">
+    <a href="#ch1"><i>01 / 00:00</i><span>一行 JD 的分量<small>为什么 AI 岗不先问模型，先问通信</small></span></a>
+    <a href="#ch2"><i>02 / 05:30</i><span>RESTful API：Agent 的普通话<small>名词、动词、状态码——一次工具调用的完整解剖</small></span></a>
+    <a href="#ch3"><i>03 / 12:00</i><span>SSE：流式输出的血管<small>打字机效果的真相，与首字延迟的经济学</small></span></a>
+    <a href="#ch4"><i>04 / 19:40</i><span>WebSocket：全双工的电话<small>会打断的对话才像对话：心跳、断线与重连</small></span></a>
+    <a href="#ch5"><i>05 / 26:20</i><span>选型法庭<small>六道场景题：什么时候用哪条线，当场判分</small></span></a>
+    <a href="#ch6"><i>06 / 33:00</i><span>一个文件，三种端点<small>FastAPI 上的信号机房：/ask、/ask/stream、/ws</small></span></a>
+    <a href="#ch7"><i>07 / 41:10</i><span>从 JD 到作品<small>把三件事演示给人看：能上手的知识才算数</small></span></a>
+    <a href="#closing"><i>END / 47:30</i><span>结语：协议比模型活得久<small>三条可以带走的判断，和这篇文没解决的问题</small></span></a>
+  </nav>
+</div>

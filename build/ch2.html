@@ -1,0 +1,62 @@
+<section class="chapter" id="ch2">
+  <div class="ch-head">
+    <div class="ch-num"><b>02</b>CHAPTER<br/>05:30</div>
+    <div class="ch-title">
+      <h2>RESTful API：Agent 的普通话</h2>
+      <p>名词、动词和状态码——把小晴的一次工具调用放到手术台上，逐行看报文</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">小晴接到的第一句话是「北京今天适合跑步吗」。它自己决定要先看天气——于是它发出了这辈子第一个 HTTP 请求。这个请求长什么样，就是这一章的全部内容。</p>
+
+    <h3>一次工具调用，就是一次 HTTP 请求</h3>
+    <p>REST 的全称是 Representational State Transfer，但这个名字帮不上忙。有用的记法是把它当<strong>一门语言</strong>：所有数据都是<strong>名词</strong>（资源，写在 URL 里），所有动作都是<strong>动词</strong>（HTTP method），所有回话的语气都是<strong>状态码</strong>。<code>GET /v1/weather?city=beijing</code> 翻译过来就是一句话：「给我看看『北京的天气』这个资源，我只是读，不改」。</p>
+    <p>REST 的另一半性格是<strong>无状态</strong>：服务器不记得你上一句说了什么，每次请求必须自带全部信息——身份在 header 里，参数在 query 或 body 里。听起来很笨，但这是它能扛住整个互联网的原因：任何一台机器都能处理你的任何一次请求，加机器就能扩容。小晴的每次工具调用都是自足的一句话，问完就走，连接即断。</p>
+
+    <h3>把报文解剖给你看</h3>
+    <p>下面是真实的报文格式，一行不多一行不少。读报文的诀窍只有一条：<strong>每一行都有职务</strong>。第一行说「做什么」，中间的 header 说「怎么寄」，空行以下是「货」本身。</p>
+
+    <div class="demo" id="demo1">
+      <div class="demo-head">
+        <span class="demo-tag">DEMO 01 / REST</span>
+        <span class="demo-title">报文解剖台<span class="hint">切场景、切状态码，看整份回信怎么变</span></span>
+      </div>
+      <div class="demo-body">
+        <div class="controls">
+          <div class="ctl"><label>请求场景</label>
+            <div class="seg" id="d1-scene" role="group" aria-label="请求场景">
+              <button data-scene="read" aria-pressed="true">GET 查天气</button>
+              <button data-scene="call" aria-pressed="false">POST 调工具</button>
+            </div>
+          </div>
+          <div class="ctl"><label>服务器回话的语气（状态码）</label>
+            <div class="seg" id="d1-status" role="group" aria-label="响应状态码">
+              <button data-status="200" aria-pressed="true">200</button>
+              <button data-status="404" aria-pressed="false">404</button>
+              <button data-status="429" aria-pressed="false">429</button>
+              <button data-status="500" aria-pressed="false">500</button>
+            </div>
+          </div>
+        </div>
+        <div class="wire-grid">
+          <div class="wire-panel">
+            <div class="wire-cap"><i>REQUEST</i><b id="d1-reqline">GET /v1/weather?city=beijing</b></div>
+            <div class="wire" id="d1-req"></div>
+          </div>
+          <div class="wire-panel">
+            <div class="wire-cap"><i>RESPONSE</i><b id="d1-codetag" class="st-200">200 OK</b></div>
+            <div class="wire" id="d1-res"></div>
+          </div>
+        </div>
+        <p class="wire-note" id="d1-note"></p>
+      </div>
+      <div class="demo-foot"><b>读法</b>：报文为真实格式节选（host 为示例域名）；时序数字取本地回环实测量级。试试 429——那行 <b>Retry-After</b> 是服务器在教你做人。</div>
+    </div>
+
+    <h3>状态码是社交礼仪，不是错误提示</h3>
+    <p>新手把状态码当「报错」，老手把它们当<strong>对方的语气</strong>：<code>200</code> 是「事情办好了」；<code>404</code> 是「你找的这个资源不存在，别重试了，重试也没用」；<code>429</code> 是「你话太密了，歇会儿再来」——而且好脾气的服务器会附一行 <code>Retry-After: 30</code>，明确告诉你歇多久；<code>500</code> 是「我这边出事了，你也别急，等会儿重试」。</p>
+    <p>这四种语气对小晴就是四种行动指令：<strong>200 走正流程，429 按秒数退避重试，500 指数退避换窗口，404 直接向模型报告「没有这个城市」</strong>。Agent 的可靠性工程，一多半是把这些语气翻译成正确行动——「见到 429 就立刻重试」的 Agent，只会被服务器拉黑得更彻底。礼貌是协议的一部分。</p>
+
+    <p>REST 够用了——直到用户等不及。模型生成 300 字要十几秒，普通话是一问一答，答完才能说下一句，可用户想<strong>边生成边看</strong>。这时候就需要第二条线了。</p>
+  </div>
+</section>

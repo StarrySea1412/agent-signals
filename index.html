@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="color-scheme" content="dark"/>
+<meta name="theme-color" content="#0b110e"/>
+<link rel="preload" href="assets/fonts/wenkai-regular.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%230b110e'/%3E%3Crect x='2.5' y='12' width='19' height='8' rx='1.5' fill='none' stroke='%2363e6a2' stroke-width='1.3'/%3E%3Cpath d='M5 8.5h3.4l2-4.2 2.2 8.4 2-4.2H19' fill='none' stroke='%23e6b45c' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='5.5' cy='16' r='1' fill='%2363e6a2'/%3E%3C/svg%3E"/>
+<meta name="description" content="从一行招聘要求出发：Python 是 Agent 的母语，REST、SSE、WebSocket 是它和世界说话的三种方式。同一条消息走完三种协议的完整一生，附报文解剖台、首字竞速台、双工对讲机、选型法庭四枚确定性小样。"/>
+<meta name="author" content="StarrySea1412"/>
+<meta property="og:title" content="Agent 的三条信号线 · 造物手记 VOL.08"/>
+<meta property="og:description" content="模型是 Agent 的脑子，通信是 Agent 的嘴和耳朵。REST、SSE、WebSocket——一条消息的三次旅行，一个文件的三种端点。"/>
+<meta property="og:type" content="article"/>
+<meta property="og:image" content="assets/art/hero.webp"/>
+<title>Agent 的三条信号线 · 造物手记 VOL.08</title>
+<style>
+/* 《Agent 的三条信号线》· 造物手记 VOL.08
+   示波器信号站：深夜机房、荧光绿波形、琥珀指示灯——三条协议在示波器上各显其形。 */
+@font-face{font-family:"LXGW WenKai";src:url("assets/fonts/wenkai-regular.woff2") format("woff2");font-weight:300 599;font-style:normal;font-display:swap}
+@font-face{font-family:"LXGW WenKai";src:url("assets/fonts/wenkai-medium.woff2") format("woff2");font-weight:600 900;font-style:normal;font-display:swap}
+:root{
+  --bg:#0b110e;--surface:#121a15;--raised:#17221b;--raised2:#1b2820;
+  --ink:#dbe7de;--ink-soft:#b3c4b8;--muted:#86988c;--faint:#5c6e63;
+  --line:#24352b;--line-soft:#1b2820;
+  --phos:#63e6a2;--phos-soft:rgba(99,230,162,.12);--phos-deep:#2f7a55;
+  --amber:#e6b45c;--amber-soft:rgba(230,180,92,.13);
+  --blue:#7fb4e0;--blue-soft:rgba(127,180,224,.13);
+  --red:#e07a5f;--red-soft:rgba(224,122,95,.14);
+  --serif:"LXGW WenKai","Songti SC","STSong","Noto Serif CJK SC",serif;
+  --sans:"LXGW WenKai",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  --shadow:0 10px 14px rgba(0,0,0,.42),0 2px 4px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:28px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.95;-webkit-font-smoothing:antialiased;text-spacing:ideograph-alpha;
+  background-image:
+    linear-gradient(rgba(99,230,162,.028) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(99,230,162,.028) 1px,transparent 1px),
+    radial-gradient(1100px 560px at 82% -6%,rgba(99,230,162,.06),transparent 60%),
+    radial-gradient(820px 460px at 4% 12%,rgba(230,180,92,.05),transparent 58%);
+  background-size:44px 44px,44px 44px,auto,auto}
+::selection{background:#1c4a35;color:#eafff3}
+a{color:var(--phos);text-underline-offset:4px;text-decoration-thickness:1px}
+a:hover{color:var(--amber)}
+button,a,input,select{touch-action:manipulation}
+button{cursor:pointer;color:inherit;font:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+img{display:block;max-width:100%;height:auto}
+p{margin:0 0 1.25em}
+h1,h2,h3,h4{line-height:1.45;text-wrap:balance;margin:0}
+h1,h2,h3{font-family:var(--serif)}
+strong{font-weight:650;color:#eef5ef}
+code{font-family:var(--mono);font-size:.86em;background:var(--phos-soft);color:#a8ecc9;padding:.12em .38em;border-radius:3px;overflow-wrap:anywhere}
+em{font-style:normal;color:var(--amber)}
+.progress{position:fixed;inset:0 auto auto 0;height:3px;width:100%;background:linear-gradient(90deg,var(--phos),var(--amber));transform:scaleX(0);transform-origin:left;z-index:60;pointer-events:none}
+.wrap{max-width:1180px;margin:auto;padding-inline:36px}
+.prose{max-width:768px;margin-inline:auto}
+
+/* masthead */
+.masthead{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-block:22px 16px;border-bottom:1.5px solid var(--line);font-size:12px;letter-spacing:.1em;color:var(--muted)}
+.brand{display:flex;align-items:center;gap:11px;font-weight:650;color:var(--ink)}
+.brand-mark{width:24px;height:24px;display:grid;place-items:center;border:1.5px solid var(--line);border-radius:3px;background:var(--raised)}
+.brand-mark svg{width:15px;height:15px;display:block}
+.brand small{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--amber);font-weight:700}
+.edition{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;display:flex;gap:14px;align-items:center}
+.edition .pack{display:inline-flex;align-items:center;gap:7px;color:var(--phos)}
+.pack-dot{width:8px;height:8px;border-radius:2px;background:var(--amber);transform:rotate(45deg);box-shadow:0 0 8px rgba(230,180,92,.6)}
+
+/* hero */
+.hero{padding-block:56px 40px;display:grid;grid-template-columns:1.04fr .96fr;gap:52px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted);margin:0 0 24px;background:var(--surface);border:1px dashed var(--phos-deep);padding:6px 13px 6px 8px;border-radius:2px}
+.eyebrow span{color:var(--phos);letter-spacing:.16em;font-weight:700;padding-right:11px;border-right:1px dashed var(--phos-deep)}
+.hero h1{font-size:clamp(46px,5.2vw,74px);font-weight:800;line-height:1.12;letter-spacing:-.04em;margin:0 0 20px}
+.hero h1 em{color:var(--phos);text-shadow:0 0 22px rgba(99,230,162,.35)}
+.hero h1 .sub{display:block;font-size:.4em;font-weight:400;letter-spacing:.02em;color:var(--ink-soft);margin-top:14px;line-height:1.7}
+.dek-wrap{margin:0 0 26px;max-width:560px;border-left:3px solid var(--phos);padding-left:20px}
+.dek-tag{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--phos);letter-spacing:.09em;margin:0 0 9px}
+.dek{font-size:16.5px;line-height:1.92;color:var(--ink-soft);margin:0}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px}
+.pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--muted);border:1px solid var(--line);border-radius:2px;padding:6px 11px;background:var(--surface)}
+.pill b{color:var(--ink);font-weight:700}
+.art{margin:0;position:relative}
+.screen{border:1.5px solid var(--line);background:var(--surface);padding:9px;box-shadow:var(--shadow);border-radius:4px}
+.screen-img{position:relative;overflow:hidden;background:#0a0f0c;border-radius:2px}
+.screen-img img{width:100%;aspect-ratio:4/3;object-fit:cover;filter:saturate(.98)}
+.screen-img::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 1px,transparent 1px 3px);mix-blend-mode:multiply;opacity:.5}
+.tc-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--muted);padding:9px 4px 2px}
+.tc-bar .tc{color:var(--phos)}
+.art figcaption{font-size:11.5px;color:var(--faint);margin-top:10px;line-height:1.7;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:var(--mono);letter-spacing:.03em}
+.art figcaption b{color:var(--amber);font-weight:700}
+
+/* stats */
+.stats{border-block:1.5px solid var(--line);background:rgba(18,26,21,.8)}
+.stats-inner{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line)}
+.stat{background:var(--surface);padding:16px 22px}
+.stat b{display:block;font-family:var(--mono);font-size:23px;letter-spacing:-.02em;color:var(--phos);line-height:1.25}
+.stat b span{font-size:11px;color:var(--faint);letter-spacing:.04em;margin-left:3px}
+.stat small{display:block;font-size:11px;color:var(--muted);letter-spacing:.04em;margin-top:3px}
+
+/* opening + toc */
+.opening{padding-block:50px 20px}
+.jd-card{margin:0 0 30px;border:1px solid var(--line);border-left:3px solid var(--amber);background:var(--raised);padding:16px 20px 13px;border-radius:3px}
+.jd-tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--faint);margin:0 0 8px}
+.jd-text{font-size:16.5px;line-height:2;color:var(--ink);margin:0 0 8px}
+.jd-note{font-size:12px;color:var(--muted);margin:0;line-height:1.8}
+.lead{font-size:19.5px;line-height:1.98;color:var(--ink)}
+.lead::first-letter{float:left;font-size:64px;line-height:.84;padding:9px 13px 0 0;color:var(--phos);font-weight:800}
+.scope{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:15px;margin-top:28px;font-family:var(--mono);line-height:1.85}
+.toc-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:9px;margin:32px 0 0;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--faint)}
+.toc{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-top:0;margin:0 0 56px}
+.toc a{background:var(--surface);padding:14px 18px;text-decoration:none;color:var(--ink);display:grid;grid-template-columns:60px 1fr;gap:12px;align-items:baseline;transition:background .18s}
+.toc a:hover{background:var(--raised2);color:var(--ink)}
+.toc a i{font-family:var(--mono);font-style:normal;font-size:10.5px;color:var(--amber);letter-spacing:.04em}
+.toc a span{font-size:14px}
+.toc a small{display:block;font-size:11px;color:var(--faint);margin-top:2px;line-height:1.6}
+
+/* chapters */
+.chapter{padding-block:50px 18px;border-top:1px solid var(--line)}
+.ch-head{display:grid;grid-template-columns:92px 1fr;gap:22px;align-items:start;margin:0 auto 32px;max-width:980px}
+.ch-num{font-family:var(--mono);font-size:13px;color:var(--amber);letter-spacing:.08em;padding-top:13px;border-top:2px solid var(--amber);line-height:1.5}
+.ch-num b{display:block;font-size:34px;color:var(--ink);letter-spacing:-.02em;font-weight:700;line-height:1.1}
+.ch-title h2{font-size:clamp(30px,3.4vw,43px);font-weight:750;letter-spacing:-.025em;line-height:1.25}
+.ch-title p{color:var(--muted);font-size:14px;margin:9px 0 0;line-height:1.8;max-width:640px}
+.ch-body{max-width:768px;margin-inline:auto}
+.ch-body h3{font-size:22px;font-weight:700;margin:42px 0 14px;letter-spacing:-.01em;padding-left:13px;border-left:3px solid var(--phos)}
+.ch-body h4{font-size:16px;font-weight:650;margin:26px 0 8px;color:var(--amber)}
+.ch-body ul,.ch-body ol{padding-left:1.35em;margin:0 0 1.3em}
+.ch-body li{margin:.4em 0}
+.ch-body li::marker{color:var(--amber)}
+.lede{font-size:17px;color:var(--ink-soft);line-height:1.95}
+.pull{border-left:3px solid var(--amber);background:linear-gradient(90deg,var(--amber-soft),transparent 70%);padding:17px 22px;margin:28px 0;font-family:var(--serif);font-size:19px;line-height:1.85;color:var(--ink)}
+.pull b{color:var(--amber);font-weight:700}
+.note{font-size:13px;color:var(--muted);border-left:1px solid var(--line);padding-left:14px;margin:22px 0;line-height:1.85}
+.note b{color:var(--ink-soft)}
+.fig{margin:32px auto;max-width:980px;position:relative;left:50%;transform:translateX(-50%);width:min(940px,calc(100vw - 72px))}
+.fig .frame{border:1.5px solid var(--line);background:var(--surface);padding:14px;box-shadow:var(--shadow);border-radius:4px}
+.fig figcaption{font-family:var(--mono);font-size:11.5px;color:var(--faint);letter-spacing:.03em;margin-top:9px;line-height:1.75;display:flex;gap:10px;align-items:baseline}
+.fig figcaption b{color:var(--amber);font-weight:700}
+
+/* relay map (ch1) */
+.relay-cap{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--faint);margin:0 0 14px}
+.relay-node{border:1px dashed var(--line);background:var(--raised);border-radius:3px;padding:12px 16px;max-width:460px;margin:0 auto;text-align:center}
+.relay-node i{font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--amber);display:block;margin-bottom:4px}
+.relay-node b{display:block;font-size:15px;margin-bottom:4px}
+.relay-node small{color:var(--muted);font-size:11.5px}
+.relay-arrow{text-align:center;color:var(--faint);font-family:var(--mono);font-size:10px;padding:6px 0;position:relative}
+.relay-arrow::before{content:"↓";display:block;color:var(--phos);font-size:14px;line-height:1}
+.relay-track{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.relay-leg{border:1px solid var(--line);border-radius:3px;padding:12px 14px;background:var(--raised);position:relative}
+.relay-leg b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;margin-bottom:7px}
+.relay-leg p{font-size:12.5px;line-height:1.75;color:var(--ink-soft);margin:0 0 7px}
+.relay-leg small{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.leg-rest b{color:var(--amber)}.leg-rest{border-top:2px solid var(--amber)}
+.leg-sse b{color:var(--phos)}.leg-sse{border-top:2px solid var(--phos)}
+.leg-ws b{color:var(--blue)}.leg-ws{border-top:2px solid var(--blue)}
+
+/* code */
+.code{margin:24px 0;border:1.5px solid var(--line);background:#0a0f0c;border-radius:4px;overflow:hidden}
+.code-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 13px;border-bottom:1px solid var(--line-soft);font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--faint);background:var(--raised)}
+.code-bar b{color:var(--amber);font-weight:600}
+.code pre{margin:0;padding:15px 16px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.4px;line-height:1.77;color:#c3d2c6;tab-size:2}
+.code pre .c{color:#6d7f73}
+.code pre .k{color:#8fd7ff}
+.code pre .s{color:#a8ecc9}
+.code pre .n{color:#e6b45c}
+.code pre .f{color:#63e6a2}
+
+/* table */
+.tablewrap{overflow-x:auto;margin:24px 0;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+th,td{text-align:left;padding:10px 13px;border-bottom:1px solid var(--line-soft);vertical-align:top;line-height:1.7}
+th{background:var(--raised);font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:700}
+tr:last-child td{border-bottom:0}
+td b{color:#eef5ef;font-weight:650}
+td code{font-size:11.5px}
+td.ok{color:var(--phos)}td.warn{color:var(--amber)}
+.num{font-family:var(--mono);font-size:12.5px;color:var(--amber);white-space:nowrap}
+
+/* demos */
+.demo{max-width:1000px;margin:42px auto;border:1.5px solid var(--line);background:var(--surface);border-radius:4px;overflow:hidden;box-shadow:var(--shadow)}
+.demo-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 17px;border-bottom:1px solid var(--line);background:var(--raised);flex-wrap:wrap}
+.demo-tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--phos);font-weight:700}
+.demo-title{font-size:15px;font-weight:650;margin-left:auto;display:flex;align-items:center;gap:9px}
+.demo-title .hint{font-family:var(--mono);font-size:10px;color:var(--faint);font-weight:400;letter-spacing:.03em}
+.demo-body{padding:18px 18px 16px}
+.controls{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:flex-end;padding-bottom:14px;border-bottom:1px solid var(--line-soft);margin-bottom:14px}
+.ctl{min-width:150px;flex:1}
+.ctl-btn{flex:0 0 auto;display:flex;gap:8px}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.ctl label b{color:var(--phos);font-weight:700;font-size:12px}
+button.run{background:var(--phos);color:#08130d;font-weight:700;border:0;border-radius:3px;padding:9px 16px;font-size:13px;letter-spacing:.03em}
+button.run:hover{background:#7df0b5}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:3px;padding:9px 14px;font-size:12.5px}
+button.ghost:hover:not(:disabled){border-color:var(--amber);color:var(--amber)}
+button.ghost:disabled{opacity:.4;cursor:not-allowed}
+input[type=range]{appearance:none;width:100%;height:24px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--line);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--phos);border:2px solid var(--surface);margin-top:-6px;box-shadow:0 0 0 1px var(--phos),0 0 8px rgba(99,230,162,.5)}
+input[type=text],select{background:var(--raised);border:1px solid var(--line);border-radius:3px;padding:8px 10px;font-family:var(--sans);font-size:13.5px;color:var(--ink);width:100%}
+input[type=text]:focus,select:focus{outline:2px solid var(--amber);outline-offset:1px}
+.seg{display:inline-flex;border:1px solid var(--line);background:var(--raised);border-radius:3px;overflow:hidden;flex-wrap:wrap}
+.seg button{background:transparent;border:0;padding:6px 11px;font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.02em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--phos);color:#08130d;font-weight:700}
+.switch{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.02em;cursor:pointer;user-select:none}
+.switch input{appearance:none;width:32px;height:17px;border-radius:9px;background:var(--line);position:relative;cursor:pointer;transition:background .18s}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(--faint);transition:transform .18s,background .18s}
+.switch input:checked{background:var(--phos-deep)}
+.switch input:checked::after{transform:translateX(15px);background:var(--phos)}
+.hintline{font-family:var(--mono);font-size:10.5px;color:var(--faint);line-height:1.7;letter-spacing:.01em}
+.demo-foot{border-top:1px solid var(--line-soft);padding:10px 17px;font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.02em;line-height:1.75}
+.demo-foot b{color:var(--phos);font-weight:600}
+.big-num{display:flex;gap:26px;align-items:baseline;margin:2px 0 12px;flex-wrap:wrap}
+.big-num div{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--faint)}
+.big-num div b{display:block;font-size:26px;color:var(--ink);letter-spacing:-.02em;line-height:1.3}
+.big-num div b em{color:var(--amber);font-style:normal}
+
+/* D1 wire anatomy */
+.wire-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.wire-panel{border:1px solid var(--line);border-radius:3px;background:#0a0f0c;overflow:hidden}
+.wire-cap{display:flex;align-items:center;gap:10px;padding:7px 12px;background:var(--raised);border-bottom:1px solid var(--line-soft);font-family:var(--mono);font-size:10px;letter-spacing:.06em}
+.wire-cap i{font-style:normal;color:var(--faint);letter-spacing:.12em}
+.wire-cap b{font-weight:700}
+.wire{padding:8px 0;font-family:var(--mono);font-size:11.5px;line-height:1.9;min-height:150px}
+.wrow{padding:1.5px 13px;display:flex;gap:10px;align-items:baseline;white-space:pre-wrap;overflow-wrap:anywhere;cursor:pointer;border-left:2px solid transparent}
+.wrow:hover{background:rgba(99,230,162,.06)}
+.wrow.pick{background:var(--phos-soft);border-left-color:var(--phos)}
+.wrow.st-line{color:var(--amber);font-weight:700}
+.wrow.hd-line{color:#9fb4a6}
+.wrow.gap-line{color:#44564b;padding-block:4px}
+.wrow.bd-line{color:#cdeeda}
+.wrow .wgap{letter-spacing:.35em}
+.wrow .wnote{margin-left:auto;color:#44564b;font-size:10px}
+.wrow .wt{color:var(--faint);flex:0 0 52px}
+.wire-slim{max-height:158px;overflow-y:auto;font-size:11px}
+.wire-note{font-size:13px;line-height:1.85;color:var(--ink-soft);background:var(--raised);border-left:2px solid var(--phos);border-radius:0 3px 3px 0;padding:10px 14px;margin:12px 0 0}
+.st-200{color:var(--phos)}.st-404{color:var(--amber)}.st-429{color:#f0a05c}.st-500{color:var(--red)}
+
+/* D2 race */
+.race{display:grid;gap:14px;margin-bottom:14px}
+.lane{border:1px solid var(--line);border-radius:3px;background:var(--raised);padding:11px 13px}
+.lane-cap{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
+.lane-cap b{font-size:13.5px}
+.lane-cap span{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.track{position:relative;height:26px;background:#0a0f0c;border:1px solid var(--line);border-radius:3px;margin-bottom:4px;overflow:visible}
+.track .fill{position:absolute;inset:2px auto 2px 2px;width:0;border-radius:2px;background:linear-gradient(90deg,rgba(99,230,162,.16),rgba(99,230,162,.42));transition:width .1s linear}
+.lane:first-child .track .fill{background:linear-gradient(90deg,rgba(230,180,92,.14),rgba(230,180,92,.4))}
+.pkt{position:absolute;top:50%;width:7px;height:7px;border-radius:50%;background:var(--phos);transform:translate(-50%,-50%);box-shadow:0 0 6px rgba(99,230,162,.8)}
+.pkt-big{position:absolute;top:50%;width:22px;height:12px;border-radius:2px;background:var(--amber);transform:translate(-50%,-50%);box-shadow:0 0 10px rgba(230,180,92,.7);animation:pulse .5s ease infinite alternate}
+@keyframes pulse{from{opacity:.65}to{opacity:1}}
+.lane-ttft{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:10px;color:var(--phos);background:rgba(8,19,13,.85);padding:2px 7px;border-radius:2px;letter-spacing:.05em}
+.lane:first-child .lane-ttft{color:var(--amber)}
+.out{margin-top:8px}
+.out-pane{min-height:64px;font-size:13px;line-height:1.85;color:var(--ink);background:#0a0f0c;border:1px solid var(--line-soft);border-radius:3px;padding:9px 12px}
+.out-pane .ph{color:var(--faint);font-family:var(--mono);font-size:10.5px}
+
+/* D3 duplex */
+.dtx{border:1px solid var(--line);border-radius:3px;background:var(--raised);padding:12px 14px;margin-bottom:14px}
+.dtx-ruler{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--faint);padding-left:56px;margin-bottom:6px}
+.dtx-lane{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center;min-height:44px}
+.dtx-lane+.dtx-lane{border-top:1px dashed var(--line-soft)}
+.dtx-name{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;letter-spacing:.06em}
+.dtx-row{position:relative;min-height:38px}
+.dtx-row:empty::before{content:"—";position:absolute;left:0;top:50%;transform:translateY(-50%);color:#33443a;font-family:var(--mono);font-size:11px}
+.blk{position:absolute;top:50%;transform:translateY(-50%);height:26px;border-radius:3px;display:flex;align-items:center;padding:0 9px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:34px}
+.blk span{overflow:hidden;text-overflow:ellipsis}
+.blk.by-you{background:var(--amber-soft);border:1px solid rgba(230,180,92,.5);color:var(--amber)}
+.blk.by-ai{background:var(--phos-soft);border:1px solid rgba(99,230,162,.45);color:var(--phos)}
+.blk.by-ctl{background:rgba(127,180,224,.1);border:1px dashed rgba(127,180,224,.4);color:var(--blue);font-family:var(--mono);font-size:10px}
+.blk.soft{opacity:.72;font-style:normal}
+.blk.fix{border-style:solid;background:rgba(230,180,92,.22);color:#f2cd8d}
+.blk.ghost{background:repeating-linear-gradient(45deg,transparent 0 6px,rgba(224,122,95,.12) 6px 12px);border:1px dashed rgba(224,122,95,.55);color:var(--red)}
+.blk.send{background:rgba(127,180,224,.08);border:1px dashed rgba(127,180,224,.35);color:var(--blue)}
+.blk.ping{background:transparent;border:1px solid rgba(127,180,224,.5);color:var(--blue);height:16px;font-family:var(--mono);font-size:9px}
+.blk.lost{background:var(--red-soft);border:1px solid rgba(224,122,95,.6);color:var(--red);font-family:var(--mono);font-size:9.5px;height:22px}
+
+/* D4 court */
+.court{display:grid;grid-template-columns:1fr 280px;gap:16px}
+.court-main{border:1px solid var(--line);border-radius:3px;background:var(--raised);padding:16px 18px}
+.court-no{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--faint);margin:0 0 6px}
+.court-title{font-size:18px;font-weight:700;line-height:1.6;margin:0 0 6px}
+.court-desc{font-size:13.5px;color:var(--ink-soft);line-height:1.85;margin:0 0 14px}
+.court-btns{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.court-btns button{flex:1;min-width:96px;border:1px solid var(--line);background:var(--surface);border-radius:3px;padding:11px 8px;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--ink-soft)}
+.court-btns button:hover:not(:disabled){border-color:var(--phos);color:var(--phos)}
+.court-btns button.good{background:var(--phos-soft);border-color:var(--phos);color:var(--phos)}
+.court-btns button.meh{background:var(--amber-soft);border-color:var(--amber);color:var(--amber)}
+.court-btns button.bad{background:var(--red-soft);border-color:rgba(224,122,95,.6);color:var(--red)}
+.court-btns button:disabled{cursor:default;opacity:.92}
+.court-q{font-family:var(--mono);font-size:10px;color:var(--faint);margin:0;letter-spacing:.08em}
+.court-side{border-left:1px solid var(--line-soft);padding-left:16px;display:flex;flex-direction:column;gap:12px}
+.court-score b{display:block;font-family:var(--mono);font-size:34px;line-height:1.15;color:var(--phos)}
+.court-score small{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.08em}
+.court-verdict{font-size:13px;line-height:1.85;color:var(--ink-soft);background:var(--surface);border-left:2px solid var(--line);padding:11px 13px;border-radius:0 3px 3px 0;flex:1}
+.court-verdict small{display:block;margin-top:9px;font-family:var(--mono);font-size:10px;color:var(--faint);line-height:1.7}
+.court-verdict.good{border-left-color:var(--phos)}
+.court-verdict.meh{border-left-color:var(--amber)}
+.court-verdict.bad{border-left-color:var(--red)}
+
+/* epilogue */
+.epilogue{max-width:768px;margin:0 auto;padding-block:38px 18px}
+.epilogue h2{font-size:clamp(28px,3vw,38px);margin-bottom:16px}
+.rules{display:grid;gap:10px;margin:24px 0 28px}
+.rule{border:1px solid var(--line);border-left:3px solid var(--phos);background:var(--surface);border-radius:0 3px 3px 0;padding:14px 17px}
+.rule b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--phos);margin-bottom:5px}
+.rule p{margin:0;font-size:14.5px;color:var(--ink-soft);line-height:1.85}
+.limits{border-top:1px solid var(--line);padding-top:18px;font-size:13.5px;color:var(--muted)}
+.limits b{color:var(--ink-soft)}
+.links{display:flex;flex-wrap:wrap;gap:9px;margin:24px 0 8px}
+.links a{font-family:var(--mono);font-size:11px;letter-spacing:.03em;border:1px solid var(--line);padding:7px 12px;text-decoration:none;color:var(--phos);background:var(--surface);border-radius:3px}
+.links a:hover{border-color:var(--amber);color:var(--amber)}
+
+.site-foot{border-top:1.5px solid var(--line);margin-top:50px;padding-block:22px 36px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint)}
+.site-foot a{color:var(--muted)}
+.foot-note{font-size:10.5px;color:#71826f;line-height:1.8;max-width:580px}
+
+@media (max-width:980px){
+  .hero{grid-template-columns:1fr;gap:30px;padding-block:40px 30px}
+  .hero h1{font-size:clamp(40px,8vw,56px)}
+  .stats-inner{grid-template-columns:repeat(2,1fr)}
+  .ch-head{grid-template-columns:64px 1fr;gap:16px}
+  .ch-num b{font-size:26px}
+  .wire-grid,.court,.relay-track{grid-template-columns:1fr}
+  .court-side{border-left:0;border-top:1px solid var(--line-soft);padding-left:0;padding-top:12px}
+  .toc{grid-template-columns:1fr}
+  .relay-node{max-width:none}
+}
+@media (max-width:620px){
+  .wrap{padding-inline:16px}
+  .masthead{font-size:10px;letter-spacing:.05em}
+  .edition .pack{display:none}
+  .hero h1{font-size:38px}
+  .lead{font-size:17.5px}
+  .ch-head{grid-template-columns:1fr;gap:6px}
+  .ch-num{border-top:0;padding-top:0;display:flex;align-items:baseline;gap:10px}
+  .ch-num b{font-size:22px}
+  .ch-title h2{font-size:27px}
+  .ch-body h3{font-size:19px}
+  .demo-body{padding:12px}
+  .demo-title .hint{display:none}
+  .code pre{font-size:11.3px}
+  .dtx-name{font-size:9.5px}
+  .blk{font-size:9.5px;padding:0 6px}
+  .big-num{gap:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+@media print{body{background:#fff}.progress,.demo,.art,.links,.toc,.site-foot{display:none}}
+
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<header class="wrap masthead">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="13" width="18" height="7" rx="1.5" stroke="#62e6a4" stroke-width="1.4"/><path d="M6 9.5h3l2-4 2 8 2-4h3" stroke="#e5b566" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="6" cy="16.5" r="1" fill="#62e6a4"/></svg></span>
+    <span>造物手记 <small>VOL.08</small></span>
+  </div>
+  <div class="edition">
+    <span class="pack"><i class="pack-dot" aria-hidden="true"></i>SIGNAL / 调频中</span>
+    <span>SIGNAL STATION 08 · 2026.10</span>
+  </div>
+</header>
+
+<section class="wrap hero">
+  <div>
+    <p class="eyebrow"><span>FIELD NOTES</span>三种协议，一条命脉</p>
+    <h1>Agent 的<br/><em>三条信号线</em><span class="sub">REST、SSE、WebSocket——一行招聘要求背后的通信解剖学，和一条消息走完三种协议的完整一生</span></h1>
+    <div class="dek-wrap">
+      <p class="dek-tag">本片提要</p>
+      <p class="dek">翻到一份 AI 岗位的招聘要求，第二条不是问模型、不是问提示词，而是「熟练掌握 Python，熟悉 SSE、WebSocket 和 Restful Api 通信方法」。这句话值得逐字拆开：Agent 的智能住在模型里，但 Agent 的能力住在通信里。这篇用同一个查天气的 Agent，把一条消息放进三条协议里各走一遍——逐字节看报文，逐毫秒看时序，最后把它们装进同一个 Python 文件。</p>
+    </div>
+    <div class="hero-meta">
+      <span class="pill"><b>3</b> 条信号线</span>
+      <span class="pill"><b>4</b> 枚可玩小样</span>
+      <span class="pill"><b>1</b> 个文件 · 3 种端点</span>
+      <span class="pill">RFC 6455 · <b>2011</b></span>
+    </div>
+  </div>
+  <figure class="art">
+    <div class="screen">
+      <div class="screen-img">
+        <img src="assets/art/hero.webp" alt="折纸鸟站在深夜信号站的木桌前调试一台老式示波器，屏幕上三条荧光绿波形：断续脉冲、单向流波与双向正弦波" width="1152" height="832"/>
+      </div>
+      <div class="tc-bar"><span>SIGNAL BENCH 08</span><span class="tc">REST · SSE · WS</span></div>
+    </div>
+    <figcaption><span><b>FIG. 00</b> 信号机房：三条波形同时在线，折纸鸟在调第三条</span><span>INK &amp; GOUACHE / 2026</span></figcaption>
+  </figure>
+</section>
+
+<section class="stats" aria-label="关键数字">
+  <div class="wrap stats-inner">
+    <div class="stat"><b>3<span>条</span></b><small>信号线：REST · SSE · WebSocket</small></div>
+    <div class="stat"><b>4<span>枚</span></b><small>确定性小样：解剖台 / 竞速台 / 对讲机 / 选型法庭</small></div>
+    <div class="stat"><b>1<span>个文件</span></b><small>FastAPI 同时挂三种端点（第 6 章实装）</small></div>
+    <div class="stat"><b>35<span>年</span></b><small>HTTP 的服役年龄（1991–2026）</small></div>
+  </div>
+</section>
+
+<div class="wrap opening">
+  <div class="prose">
+    <div class="jd-card">
+      <p class="jd-tag">JOB DESCRIPTION · 某 AI 应用开发岗 · 要求第 ② 条（原文如此）</p>
+      <p class="jd-text">「熟练掌握<em>Python</em>技术（必需），熟悉基本语法和常用库，熟悉<em>SSE</em>，<em>WebSocket</em>和<em>Restful Api</em>通信方法」</p>
+      <p class="jd-note">——顺带说一句，「Restful」是业内最常见的误写，规范写法是 RESTful。不影响它是条好要求；恰好相反，它比很多空谈「精通大模型」的 JD 诚实得多。</p>
+    </div>
+    <p class="lead">第一次认真读这行字，是帮朋友改简历的时候。他想投 AI 应用开发，简历上写满了自己调过哪些模型、写过多少提示词。我把这行 JD 发给他，问：SSE 是什么，答不上来；WebSocket 和 HTTP 的区别，含糊；Restful 的「资源」指什么，没概念。他问我：这些都是小东西吧，模型才是大头？</p>
+    <p>我说反了。<strong>模型是 Agent 的脑子，通信是 Agent 的嘴和耳朵。</strong>脑子再好，嘴张不开，它就只是一个孤岛上的思考者——想得再对，也拿不到天气数据、听不到用户后半句话、发不出一个字。一份「会查天气的 Agent」的实际构成是：大约一成的智能在模型调用里，剩下九成的工程在通信里——请求怎么发、流怎么接、断了怎么重连。</p>
+    <p>而这行 JD 列的三样东西，恰好是 Agent 和世界说话的全部三种方式：<strong>RESTful API 是普通话</strong>，一问一答，句句完整；<strong>SSE 是单向的广播线</strong>，服务器只管说，客户端只管听——你看到的每一个「打字机效果」，底下都是它；<strong>WebSocket 是全双工的电话</strong>，两头同时开口，谁也不用等谁。</p>
+    <p>这篇的走法很克制：全程只用一个 Agent——一个只查天气的小服务——让<em>同一条消息</em>在三条协议里各走一遍完整的一生。不背概念，直接看报文、看时序、看代码。三种协议不是三个知识点，是一套分工。</p>
+    <p class="scope">阅读说明：全文约九千字，七章 + 四枚小样。第 1 章拆这行 JD 的分量；第 2 章走 RESTful，附报文解剖台；第 3 章解剖 SSE 与打字机效果，附首字竞速台；第 4 章走 WebSocket，附双工对讲机；第 5 章是选型法庭，六道场景题当场判分；第 6 章把三种端点装进同一个 FastAPI 文件；第 7 章收束成可演示的三件事。四枚小样全部是确定性模型：参数可调、行为可复现，不含随机数。</p>
+  </div>
+
+  <p class="toc-head"><span>SIGNAL INDEX / 波形清单</span><span>07 SECTIONS · 04 DEMOS</span></p>
+  <nav class="toc" aria-label="目录">
+    <a href="#ch1"><i>01 / 00:00</i><span>一行 JD 的分量<small>为什么 AI 岗不先问模型，先问通信</small></span></a>
+    <a href="#ch2"><i>02 / 05:30</i><span>RESTful API：Agent 的普通话<small>名词、动词、状态码——一次工具调用的完整解剖</small></span></a>
+    <a href="#ch3"><i>03 / 12:00</i><span>SSE：流式输出的血管<small>打字机效果的真相，与首字延迟的经济学</small></span></a>
+    <a href="#ch4"><i>04 / 19:40</i><span>WebSocket：全双工的电话<small>会打断的对话才像对话：心跳、断线与重连</small></span></a>
+    <a href="#ch5"><i>05 / 26:20</i><span>选型法庭<small>六道场景题：什么时候用哪条线，当场判分</small></span></a>
+    <a href="#ch6"><i>06 / 33:00</i><span>一个文件，三种端点<small>FastAPI 上的信号机房：/ask、/ask/stream、/ws</small></span></a>
+    <a href="#ch7"><i>07 / 41:10</i><span>从 JD 到作品<small>把三件事演示给人看：能上手的知识才算数</small></span></a>
+    <a href="#closing"><i>END / 47:30</i><span>结语：协议比模型活得久<small>三条可以带走的判断，和这篇文没解决的问题</small></span></a>
+  </nav>
+</div>
+
+<main>
+<section class="chapter" id="ch1">
+  <div class="ch-head">
+    <div class="ch-num"><b>01</b>CHAPTER<br/>00:00</div>
+    <div class="ch-title">
+      <h2>一行 JD 的分量</h2>
+      <p>为什么 AI 岗位不先问模型，先问通信——把第②条要求拆成三段，看每一段到底在考什么</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">把第②条要求横过来竖着读，其实是三句话：<strong>Python 是必需的</strong>；<strong>语法和常用库要熟</strong>；<strong>三种通信方法要懂</strong>。三句话的分量完全不同——第一句是站队，第二句是体能，第三句是真正的护城河。</p>
+
+    <h3>第一段：为什么偏偏是 Python</h3>
+    <p>不是 Python 比 Go 快，也不是它比 TypeScript 优雅。是<strong>重力</strong>。整个 AI 工具链的质量中心在 Python 上：模型侧的 transformers、vLLM，编排侧的 LangChain，还有各家模型公司的官方 SDK——Python 版几乎总是第一顺位发布、文档最全、社区最吵的那一个。你要接一个新模型，它的 README 第一行代码示例多半就是 <code>pip install</code> 开头。</p>
+    <p>这对 Agent 开发者意味着一件很实际的事：<strong>任何新能力，从发布到你能用，Python 的距离最短。</strong>别人还在等官方的 Rust 客户端，你已经在报 issue 了。重力不是优点，但重力决定了水往哪流。</p>
+
+    <h3>第二段：语法和常用库，是体能不是卖点</h3>
+    <p>「熟悉基本语法和常用库」听起来像客套话，其实是面试里最快的筛子。virtualenv 为什么存在、<code>pip</code> 和 <code>uv</code> 的区别、<code>async</code>/<code>await</code> 到底在等什么、<code>pydantic</code> 为什么成了所有 LLM SDK 的地基——这些不拉开差距，但缺一样都会当场掉队。本文第 6 章的代码会把这张清单过一遍。</p>
+
+    <h3>第三段：通信方法，Agent 的嘴和耳朵</h3>
+    <p>现在说重点。一个 Agent 的标准工作回路是：<strong>听用户说话 → 模型思考 → 决定调哪个工具 → 拿到工具结果 → 模型再思考 → 说出回答</strong>。七步里，第 3、4 步是模型发出去的 HTTP 请求，第 1、6 步是它收发文字的通道。回路七步，四步在通信。</p>
+    <p>所以这行 JD 真正在说的是：<strong>你会调模型，只是会想；你会通信，才是会说。</strong>面试官不担心你不会写 prompt——prompt 是可以背的；他担心的是你接不住流、认不出 429、分不清什么时候该用 WebSocket——这些背不会，只能见过。</p>
+
+    <div class="fig">
+      <div class="frame relay-frame">
+        <p class="relay-cap">FIG. 01 · 一次服务的接力全景——同一段回答，三种协议各跑一棒</p>
+        <div class="relay">
+          <div class="relay-node">
+            <i>你</i>
+            <b>「北京今天适合跑步吗？」</b>
+            <small>一句话进来，带着后续追问</small>
+          </div>
+          <div class="relay-arrow down" data-label="入口"><span>Web / App</span></div>
+          <div class="relay-track">
+            <div class="relay-leg leg-rest">
+              <b>第一棒 · REST</b>
+              <p>模型决定调工具：<code>get_weather("beijing")</code> 发出一次标准请求，拿到完整数据，连接即断。</p>
+              <small>→ 第 2 章</small>
+            </div>
+            <div class="relay-leg leg-sse">
+              <b>第二棒 · SSE</b>
+              <p>模型开始回答。不是憋一整段再发，而是一个词一个词往外流——你看到的打字机效果。</p>
+              <small>→ 第 3 章</small>
+            </div>
+            <div class="relay-leg leg-ws">
+              <b>第三棒 · WebSocket</b>
+              <p>如果换语音对话：两头同时开口、说到一半能打断——这就换电话上场。</p>
+              <small>→ 第 4 章</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption><span><b>FIG. 01</b> 三条线不是三选一，是一段服务里的三段接力</span><span>贯穿全文的地图</span></figcaption>
+    </div>
+
+    <p>这三种「方式」不是并列的三个知识点，而是<strong>同一次服务里的三段接力</strong>：REST 把外面的数据拿进来，SSE 把回答流出去，WebSocket 承接实时形态。后文全程只用一个例子——一个只查天气的小 Agent，代号<strong>小晴</strong>——让同一条消息「北京今天适合跑步吗」在三条线上各走一遍完整的一生。</p>
+    <p>先从最老、也最不会让你失业的那条线开始。</p>
+
+    <div class="pull">模型决定 Agent 能想多远，<b>协议决定 Agent 能走多近。</b></div>
+  </div>
+</section>
+
+<section class="chapter" id="ch2">
+  <div class="ch-head">
+    <div class="ch-num"><b>02</b>CHAPTER<br/>05:30</div>
+    <div class="ch-title">
+      <h2>RESTful API：Agent 的普通话</h2>
+      <p>名词、动词和状态码——把小晴的一次工具调用放到手术台上，逐行看报文</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">小晴接到的第一句话是「北京今天适合跑步吗」。它自己决定要先看天气——于是它发出了这辈子第一个 HTTP 请求。这个请求长什么样，就是这一章的全部内容。</p>
+
+    <h3>一次工具调用，就是一次 HTTP 请求</h3>
+    <p>REST 的全称是 Representational State Transfer，但这个名字帮不上忙。有用的记法是把它当<strong>一门语言</strong>：所有数据都是<strong>名词</strong>（资源，写在 URL 里），所有动作都是<strong>动词</strong>（HTTP method），所有回话的语气都是<strong>状态码</strong>。<code>GET /v1/weather?city=beijing</code> 翻译过来就是一句话：「给我看看『北京的天气』这个资源，我只是读，不改」。</p>
+    <p>REST 的另一半性格是<strong>无状态</strong>：服务器不记得你上一句说了什么，每次请求必须自带全部信息——身份在 header 里，参数在 query 或 body 里。听起来很笨，但这是它能扛住整个互联网的原因：任何一台机器都能处理你的任何一次请求，加机器就能扩容。小晴的每次工具调用都是自足的一句话，问完就走，连接即断。</p>
+
+    <h3>把报文解剖给你看</h3>
+    <p>下面是真实的报文格式，一行不多一行不少。读报文的诀窍只有一条：<strong>每一行都有职务</strong>。第一行说「做什么」，中间的 header 说「怎么寄」，空行以下是「货」本身。</p>
+
+    <div class="demo" id="demo1">
+      <div class="demo-head">
+        <span class="demo-tag">DEMO 01 / REST</span>
+        <span class="demo-title">报文解剖台<span class="hint">切场景、切状态码，看整份回信怎么变</span></span>
+      </div>
+      <div class="demo-body">
+        <div class="controls">
+          <div class="ctl"><label>请求场景</label>
+            <div class="seg" id="d1-scene" role="group" aria-label="请求场景">
+              <button data-scene="read" aria-pressed="true">GET 查天气</button>
+              <button data-scene="call" aria-pressed="false">POST 调工具</button>
+            </div>
+          </div>
+          <div class="ctl"><label>服务器回话的语气（状态码）</label>
+            <div class="seg" id="d1-status" role="group" aria-label="响应状态码">
+              <button data-status="200" aria-pressed="true">200</button>
+              <button data-status="404" aria-pressed="false">404</button>
+              <button data-status="429" aria-pressed="false">429</button>
+              <button data-status="500" aria-pressed="false">500</button>
+            </div>
+          </div>
+        </div>
+        <div class="wire-grid">
+          <div class="wire-panel">
+            <div class="wire-cap"><i>REQUEST</i><b id="d1-reqline">GET /v1/weather?city=beijing</b></div>
+            <div class="wire" id="d1-req"></div>
+          </div>
+          <div class="wire-panel">
+            <div class="wire-cap"><i>RESPONSE</i><b id="d1-codetag" class="st-200">200 OK</b></div>
+            <div class="wire" id="d1-res"></div>
+          </div>
+        </div>
+        <p class="wire-note" id="d1-note"></p>
+      </div>
+      <div class="demo-foot"><b>读法</b>：报文为真实格式节选（host 为示例域名）；时序数字取本地回环实测量级。试试 429——那行 <b>Retry-After</b> 是服务器在教你做人。</div>
+    </div>
+
+    <h3>状态码是社交礼仪，不是错误提示</h3>
+    <p>新手把状态码当「报错」，老手把它们当<strong>对方的语气</strong>：<code>200</code> 是「事情办好了」；<code>404</code> 是「你找的这个资源不存在，别重试了，重试也没用」；<code>429</code> 是「你话太密了，歇会儿再来」——而且好脾气的服务器会附一行 <code>Retry-After: 30</code>，明确告诉你歇多久；<code>500</code> 是「我这边出事了，你也别急，等会儿重试」。</p>
+    <p>这四种语气对小晴就是四种行动指令：<strong>200 走正流程，429 按秒数退避重试，500 指数退避换窗口，404 直接向模型报告「没有这个城市」</strong>。Agent 的可靠性工程，一多半是把这些语气翻译成正确行动——「见到 429 就立刻重试」的 Agent，只会被服务器拉黑得更彻底。礼貌是协议的一部分。</p>
+
+    <p>REST 够用了——直到用户等不及。模型生成 300 字要十几秒，普通话是一问一答，答完才能说下一句，可用户想<strong>边生成边看</strong>。这时候就需要第二条线了。</p>
+  </div>
+</section>
+
+<section class="chapter" id="ch3">
+  <div class="ch-head">
+    <div class="ch-num"><b>03</b>CHAPTER<br/>12:00</div>
+    <div class="ch-title">
+      <h2>SSE：流式输出的血管</h2>
+      <p>打字机效果的真相：它不是什么新技术，是一段永远不写完的 HTTP 响应</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">很多人猜打字机效果是 WebSocket 做的。猜错了——你在任何一家主流 AI 产品里按 F12 打开 Network 面板，找到那条回答请求，它的 <code>Content-Type</code> 几乎都写着 <code>text/event-stream</code>。<strong>SSE，Server-Sent Events。</strong></p>
+
+    <h3>一段永远不结束的 HTTP 响应</h3>
+    <p>SSE 的原理朴素到让人失望：服务器接到请求后<strong>不关连接</strong>，把响应体当成长长的传送带，一段一段往里写。每段以 <code>data:</code> 开头、以一个空行结尾：</p>
+    <div class="code"><div class="code-bar"><b>text/event-stream · 报文原文</b><span>HTTP/1.1 200（Content-Type: text/event-stream）</span></div>
+<pre>data: {"delta": "北京今天"}
+data: {"delta": "晴，18°C，"}
+data: {"delta": "西北风三级。"}
+data: [DONE]</pre></div>
+    <p>就这么简单。没有新协议，没有新握手，就是一条普通的 HTTP 响应，只是<strong>永远不写句号</strong>。客户端这边，浏览器内建了 <code>EventSource</code> 接口，三行代码接住流；各家模型 SDK 里那个 <code>stream=True</code>，底下流的也是这同一种东西。</p>
+
+    <h3>为什么是 SSE，不是 WebSocket</h3>
+    <p>LLM 的输出是天然的单向流：模型往外吐字，用户不需要在这个通道里插话——话是用户先说完的。这种「服务器单方面广播」的场景，SSE 比WebSocket 合算得多：</p>
+    <ul>
+      <li><strong>它就是 HTTP。</strong>代理、CDN、网关、负载均衡，整个互联网的基础设施不用任何改造就认得它；WebSocket 的 <code>Upgrade</code> 握手在很多老代理面前会被拦下来。</li>
+      <li><strong>断线重连是内建的。</strong><code>EventSource</code> 断了自动重连，还带着 <code>Last-Event-ID</code> 头告诉服务器「我听到第几条了」，服务器从这个位置续传；每条事件还可以带 <code>retry:</code> 字段指定重连间隔。WebSocket 断了就是断了，心跳、重连、续传，全要自己写。</li>
+      <li><strong>代价清单极短。</strong>唯一的硬伤是方向：只能服务器→客户端。对小晴来说这不是硬伤，是刚好。</li>
+    </ul>
+    <p class="note"><b>一个值得知道的坑</b>：浏览器原生的 <code>EventSource</code> 只会发 GET 请求。所以当你需要 POST 一个大 prompt 去换流式响应时，SDK 们都不用它——它们拿 <code>fetch</code> 的 ReadableStream 手写 SSE 解析。<strong>「知道 SSE 报文格式」的实际价值就在这</b>：绕开封装，直接读流。</p>
+
+    <h3>首字延迟的经济学</h3>
+    <p>流式真正的胜利不是「快」，是<strong>把等待变成阅读</strong>。同一份 120 token 的回答，非流式要等全部生成完才见到第一个字；流式几百毫秒就见字。人感觉第二台机器「快得多」，尽管两台机器<strong>生成完的总时间一模一样</strong>。这个差别有个行业名字：TTFT，Time To First Token，首 token 时间——它是所有对话产品的核心指标之一。</p>
+
+    <div class="demo" id="demo2">
+      <div class="demo-head">
+        <span class="demo-tag">DEMO 02 / SSE</span>
+        <span class="demo-title">首字竞速台<span class="hint">同一个回答，两条路：憋大招 vs 边写边流</span></span>
+      </div>
+      <div class="demo-body">
+        <div class="controls">
+          <div class="ctl"><label>模型生成速度 <b id="d2-v-speed">60 tok/s</b></label><input type="range" id="d2-speed" min="20" max="120" step="5" value="60"/></div>
+          <div class="ctl"><label>网络往返 RTT <b id="d2-v-rtt">300 ms</b></label><input type="range" id="d2-rtt" min="50" max="800" step="25" value="300"/></div>
+          <div class="ctl"><label>回答长度 <b id="d2-v-len">120 tok</b></label><input type="range" id="d2-len" min="60" max="240" step="10" value="120"/></div>
+          <div class="ctl ctl-btn"><button class="run" id="d2-run">开始对比</button></div>
+        </div>
+        <div class="race">
+          <div class="lane" id="d2-lane-a">
+            <div class="lane-cap"><b>甲 · 非流式</b><span>整段生成完，一次性寄达</span></div>
+            <div class="track"><i class="fill"></i><span class="pkt pkt-big"></span><span class="lane-ttft" id="d2-ttft-a">TTFT —</span></div>
+            <div class="out"><div class="out-pane" id="d2-out-a"><span class="ph">（还在等待整段……）</span></div></div>
+          </div>
+          <div class="lane" id="d2-lane-b">
+            <div class="lane-cap"><b>乙 · SSE 流式</b><span>出一个词寄一个词</span></div>
+            <div class="track"><i class="fill"></i><span class="lane-ttft" id="d2-ttft-b">TTFT —</span></div>
+            <div class="out"><div class="out-pane" id="d2-out-b"><span class="ph">（等待首字……）</span></div></div>
+          </div>
+        </div>
+        <div class="big-num" id="d2-nums">
+          <div>甲 首字<b id="d2-na">—</b></div>
+          <div>乙 首字<b id="d2-nb">—</b></div>
+          <div>感知差距<b id="d2-nc">—</b></div>
+          <div>两者写完<b id="d2-nd">—</b></div>
+        </div>
+        <div class="wire wire-slim" id="d2-log"></div>
+        <p class="hintline" id="d2-hint">底部是乙通道收到的 SSE 事件流原文（节选回放）。</p>
+      </div>
+      <div class="demo-foot"><b>确定性模型</b>：首 token 时间固定 250 ms，每 3 个 token 打包一个 <code>data:</code> 事件，事件到达按生成节拍推进。拖大 RTT 再跑一次——流式的优势会缩水但不会消失，这就是为什么 CDN 边缘节点值得做。</div>
+    </div>
+
+    <p>跑几次你会看到一个反直觉的事实：拖动「回答长度」对甲的首字伤害巨大，对乙几乎没有影响——<strong>非流式的首字时间里混进了整篇作文的工时，流式的首字时间只含网络和第一口生成</strong>。这就是为什么 2023 年之后，「API 支不支持 stream」成了对话类产品选型的第一道门槛。</p>
+
+    <p>但单向血管有一个天然盲区：它听不见。如果用户在小晴说话的时候想插一句「等等，还有紫外线吗」——SSE 的传送带不会为任何人回头。要会打断的对话，得换第三条线。</p>
+  </div>
+</section>
+
+<section class="chapter" id="ch4">
+  <div class="ch-head">
+    <div class="ch-num"><b>04</b>CHAPTER<br/>19:40</div>
+    <div class="ch-title">
+      <h2>WebSocket：全双工的电话</h2>
+      <p>一次握手借道 HTTP，之后两头随时开口——会打断的对话才像对话</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">SSE 是广播，HTTP 是普通话，但真人对话是<strong>两个人同时在线、谁都能随时开口</strong>。要这种效果，就需要 WebSocket：2011 年定稿的 RFC 6455，给 Web 补上的那部全双工电话。</p>
+
+    <h3>借 HTTP 的门，进 TCP 的屋</h3>
+    <p>WebSocket 的开场白是一次长得像 HTTP 的请求——但带着一句黑话：</p>
+    <div class="code"><div class="code-bar"><b>握手报文 · GET /ws</b><span>HTTP/1.1 101 Switching Protocols</span></div>
+<pre>GET /ws HTTP/1.1
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</pre></div>
+    <p>从 101 那一行起，这条连接就<strong>不再是 HTTP 了</strong>：双方降下 HTTP 的语法，改说 WebSocket 的帧。同一条 TCP 连接上，两头都可以随时发帧、随时收帧，不必再「一问一答」。建立连接贵，但建立之后每帧的头上只有 2–10 字节——HTTP 报文光 header 就常以百字节计。这就是为什么语音、游戏、协同编辑这类高频小消息的场景，全都要它。</p>
+
+    <h3>全双工的价值：能打断</h3>
+    <p>想一个问题：你对语音助手说了半句话，突然改主意，它该不该停下来听？真人会停，<strong>半双工的系统做不到</strong>——HTTP 的世界里，回答一旦开始，你的新输入只能等下一轮请求；全双工的世界里，你的插话作为新帧<strong>当场送达</strong>，对面的生成逻辑可以立刻改道。这就是「barge-in，打断」——所有语音产品体验的分水岭。语音助手普遍选择 WebSocket（比如 OpenAI 的 Realtime API 走的就是它），不是偶然：音频帧需要高频双向流动，还要能打断。</p>
+
+    <div class="demo" id="demo3">
+      <div class="demo-head">
+        <span class="demo-tag">DEMO 03 / WEBSOCKET</span>
+        <span class="demo-title">双工对讲机<span class="hint">同一段对话，半双工和全双工各过一遍</span></span>
+      </div>
+      <div class="demo-body">
+        <div class="controls">
+          <div class="ctl"><label>通话制式</label>
+            <div class="seg" id="d3-mode" role="group" aria-label="通话制式">
+              <button data-mode="half" aria-pressed="true">HTTP · 半双工</button>
+              <button data-mode="full" aria-pressed="false">WS · 全双工</button>
+            </div>
+          </div>
+          <div class="ctl"><label class="switch"><input type="checkbox" id="d3-heart"/>心跳保活（每 3 秒一拍 PING/PONG）</label></div>
+          <div class="ctl ctl-btn"><button class="run" id="d3-run">开始通话</button><button class="ghost" id="d3-cut" disabled>模拟断线</button></div>
+        </div>
+        <div class="dtx">
+          <div class="dtx-ruler" id="d3-ruler"><span>0s</span><span>1s</span><span>2s</span><span>3s</span><span>4s</span><span>5s</span><span>6s</span><span>7s</span></div>
+          <div class="dtx-lane"><div class="dtx-name">你</div><div class="dtx-row" id="d3-row-you"></div></div>
+          <div class="dtx-lane"><div class="dtx-name">小晴</div><div class="dtx-row" id="d3-row-ai"></div></div>
+          <div class="dtx-lane dtx-ctrl"><div class="dtx-name">线路</div><div class="dtx-row" id="d3-row-ctl"></div></div>
+        </div>
+        <div class="big-num" id="d3-nums">
+          <div>通话总时长<b id="d3-na">—</b></div>
+          <div>插话被接收<b id="d3-nb">—</b></div>
+          <div>答案完整度<b id="d3-nc">—</b></div>
+        </div>
+        <p class="hintline" id="d3-note">剧本：你先说需求，第 1.5 秒插话「还有紫外线指数吗」。看两种制式分别怎么接。</p>
+      </div>
+      <div class="demo-foot"><b>确定性模型</b>：块的位置按剧本节拍推演。全双工制式下先点「开始通话」再点「模拟断线」——注意重连之后，断线期间的帧不会自动补发，状态要自己同步：这正是它和 SSE 内建续传的关键差别。</div>
+    </div>
+
+    <h3>自由的代价清单</h3>
+    <p>WebSocket 给了双工自由，账单也来了：<strong>中间设施不再天然友好</strong>（老代理和某些企业网关会掐断 Upgrade 握手）；<strong>断线要自己管</strong>——协议层留了 ping/pong 控制帧用来探活，但应用层的心跳节奏、重连退避、断线期间的消息补偿，全是应用自己的事；<strong>没有 HTTP 缓存生态</strong>可借力。所以它不是「更高级」的选项，是<strong>为实时性付账</strong>的选项。需求里没有「同时、双向、高频」，就别请它出场。</p>
+
+    <p>三条线都见过了：普通话、广播、电话。真到设计系统的时候怎么选？下一章不开课，开庭。</p>
+  </div>
+</section>
+
+<section class="chapter" id="ch5">
+  <div class="ch-head">
+    <div class="ch-num"><b>05</b>CHAPTER<br/>26:20</div>
+    <div class="ch-title">
+      <h2>选型法庭</h2>
+      <p>六道场景题当场判分——以及为什么高级答案通常不是「三选一」</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">先把三条线的「户口」摆在一张桌上，再开庭。</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>维度</th><th>RESTful API</th><th>SSE</th><th>WebSocket</th></tr></thead>
+        <tbody>
+          <tr><td><b>方向</b></td><td>一问一答</td><td>服务器 → 客户端，单向</td><td>双向同时</td></tr>
+          <tr><td><b>连接寿命</b></td><td>答完即断</td><td>一条响应流，可长可短</td><td>一次握手，长期会话</td></tr>
+          <tr><td><b>基础设施</b></td><td class="ok">全家欢迎</td><td class="ok">同为 HTTP，全家欢迎</td><td class="warn">老代理/网关可能拦 Upgrade</td></tr>
+          <tr><td><b>断线恢复</b></td><td>重发即可</td><td class="ok">内建：自动重连 + Last-Event-ID 续传</td><td class="warn">自管心跳、重连与补偿</td></tr>
+          <tr><td><b>每条消息开销</b></td><td>整份报文，header 以百字节计</td><td>每事件一行 <code>data:</code> + 空行</td><td class="ok">帧头仅 2–10 字节</td></tr>
+          <tr><td><b>典型场景</b></td><td>工具调用、查询、表单</td><td>流式回答、进度推送</td><td>语音、协同、实时游戏</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>表背不背得下来不重要，重要的是手感。下面六道题，读完场景凭手感判——选完立刻出判决和理由。允许错，错了比背书有用。</p>
+
+    <div class="demo" id="demo4">
+      <div class="demo-head">
+        <span class="demo-tag">DEMO 04 / 选型</span>
+        <span class="demo-title">选型法庭<span class="hint">六道题，答完即判，可反复</span></span>
+      </div>
+      <div class="demo-body">
+        <div class="court">
+          <div class="court-main">
+            <p class="court-no" id="d4-no">案件 1 / 6</p>
+            <p class="court-title" id="d4-title">—</p>
+            <p class="court-desc" id="d4-desc">—</p>
+            <div class="court-btns" id="d4-btns">
+              <button data-p="rest">REST</button>
+              <button data-p="sse">SSE</button>
+              <button data-p="ws">WebSocket</button>
+            </div>
+            <p class="court-q">你的判断：这是哪条线的活？</p>
+          </div>
+          <div class="court-side">
+            <div class="court-score"><b id="d4-score">0</b><small>累计得分 / 满分 12</small></div>
+            <div class="court-verdict" id="d4-verdict">选一条，判决马上到。</div>
+            <button class="ghost" id="d4-next" disabled>下一案 →</button>
+          </div>
+        </div>
+      </div>
+      <div class="demo-foot"><b>判分规则</b>：最优答案 2 分，可行但杀鸡用牛刀 1 分，答错 0 分。判决里会给出真实世界的参照物。</div>
+    </div>
+
+    <h3>高级答案：不是三选一，是三段接力</h3>
+    <p>六道题做完，回头看第 1 章那张接力图，会发现<strong>小晴一次服务里三条线全用了</strong>：进来的查询和出去的工具调用是 REST，流出去的回答是 SSE，语音形态的对话是 WebSocket。真实的 Agent 系统就是这样一座三线机房——<strong>选型不是选一个协议，是给每一段交互找到它的线</strong>。面试里能把这一点说清楚的人，比背出三个定义的人值钱得多。</p>
+    <p>空谈到此为止。下一章把这座机房真的盖出来——一个 Python 文件，三种端点，一条命令跑起来。</p>
+  </div>
+</section>
+
+<section class="chapter" id="ch6">
+  <div class="ch-head">
+    <div class="ch-num"><b>06</b>CHAPTER<br/>33:00</div>
+    <div class="ch-title">
+      <h2>一个文件，三种端点</h2>
+      <p>把三条信号线装进同一份 FastAPI：/v1/weather、/ask/stream、/ws，一条命令起机房</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">现在兑现承诺：小晴的信号机房，整个后端就是一个 Python 文件。三种协议各占一个函数，REST 三个装饰器里最不起眼，却撑着另外两个的地基。</p>
+
+    <div class="code"><div class="code-bar"><b>signal_room.py</b><span>FastAPI · 完整可跑 · uvicorn signal_room:app --reload</span></div>
+<pre><span class="k">from</span> fastapi <span class="k">import</span> FastAPI, WebSocket
+<span class="k">from</span> fastapi.responses <span class="k">import</span> StreamingResponse
+<span class="k">import</span> asyncio, json, httpx
+
+app = FastAPI()
+
+<span class="c"># ── 第一棒 · REST：工具调用的入口（第 2 章）──────────</span>
+<span class="f">@app.get</span>(<span class="s">"/v1/weather"</span>)
+<span class="k">async def</span> <span class="n">weather</span>(city: <span class="n">str</span>):
+    <span class="k">async with</span> httpx.AsyncClient() <span class="k">as</span> client:
+        r = <span class="k">await</span> client.get(UPSTREAM, params={<span class="s">"city"</span>: city})
+        <span class="k">if</span> r.status_code == <span class="n">429</span>:                     <span class="c"># 礼貌：听 Retry-After 的</span>
+            <span class="k">await</span> asyncio.sleep(<span class="n">int</span>(r.headers.get(<span class="s">"Retry-After"</span>, <span class="s">"5"</span>)))
+            r = <span class="k">await</span> client.get(UPSTREAM, params={<span class="s">"city"</span>: city})
+        r.raise_for_status()
+    data = r.json()
+    <span class="k">return</span> {<span class="s">"city"</span>: city, <span class="s">"temp"</span>: data[<span class="s">"temp"</span>], <span class="s">"wind"</span>: data[<span class="s">"wind"</span>]}
+
+<span class="c"># ── 第二棒 · SSE：回答流出去（第 3 章）─────────────</span>
+<span class="f">@app.get</span>(<span class="s">"/ask/stream"</span>)
+<span class="k">async def</span> <span class="n">ask_stream</span>(q: <span class="n">str</span>):
+    <span class="k">async def</span> <span class="n">gen</span>():
+        <span class="k">async for</span> chunk <span class="k">in</span> llm_stream(q):            <span class="c"># 逐 token 生成</span>
+            <span class="k">yield</span> <span class="s">f"data: {json.dumps({'delta': chunk}, ensure_ascii=False)}\n\n"</span>
+        <span class="k">yield</span> <span class="s">"data: [DONE]\n\n"</span>
+    <span class="k">return</span> StreamingResponse(gen(), media_type=<span class="s">"text/event-stream"</span>)
+
+<span class="c"># ── 第三棒 · WebSocket：能打断的语音对话（第 4 章）────</span>
+<span class="f">@app.websocket</span>(<span class="s">"/ws"</span>)
+<span class="k">async def</span> <span class="n">voice</span>(sock: WebSocket):
+    <span class="k">await</span> sock.accept()                               <span class="c"># 101 握手在这里完成</span>
+    <span class="k">try</span>:
+        <span class="k">while</span> <span class="n">True</span>:
+            msg = <span class="k">await</span> sock.receive_text()           <span class="c"># 用户帧：说到一半也能来</span>
+            <span class="k">async for</span> chunk <span class="k">in</span> llm_stream(msg):
+                <span class="k">await</span> sock.send_text(chunk)           <span class="c"># 回答帧：边生成边发</span>
+    <span class="k">except</span> Exception:
+        <span class="k">pass</span>                                          <span class="c"># 断线清理；重连是客户端的事</span></pre></div>
+
+    <h3>三个函数，三种性格</h3>
+    <p>同一份代码里，三种协议的性格差一目了然：<strong>REST 端点最短</strong>，进去、拿数据、<code>return</code>，连接由框架收尾；<strong>SSE 端点是一个生成器</strong>——<code>yield</code> 一段就送一段，框架负责把每段标上 <code>data:</code> 和空行，<code>media_type="text/event-stream"</code> 就是那条传送带的出厂铭牌；<strong>WebSocket 端点是一个循环</strong>——<code>accept()</code> 之后连接一直活着，<code>while True</code> 里来一帧答一帧，是唯一需要你自己管生命周期的。</p>
+    <p>注意第 14 行那个 <code>if r.status_code == 429</code>：第 2 章说的「礼貌是协议的一部分」，落地就是这一行——读 <code>Retry-After</code>，睡够，再试。面试时聊到可靠性，能随手写出这三行的人不多。</p>
+
+    <h3>这份文件背后的 Python 清单</h3>
+    <p>JD 里「熟悉基本语法和常用库」的那张清单，其实就是这几个名字：</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>库</th><th>在这份文件里干的活</th><th>一句话记法</th></tr></thead>
+        <tbody>
+          <tr><td><code>fastapi</code></td><td>三种端点的骨架，异步原生</td><td>信号机房的房体</td></tr>
+          <tr><td><code>uvicorn</code></td><td>ASGI 服务器，负责真的跑起来</td><td>机房的电闸</td></tr>
+          <tr><td><code>httpx</code></td><td>发上游 REST 请求，带 <code>await</code></td><td>requests 的异步继任者</td></tr>
+          <tr><td><code>pydantic</code></td><td>参数与响应的类型校验（FastAPI 内建依赖）</td><td>门口的安检仪</td></tr>
+          <tr><td><code>websockets</code></td><td>客户端侧连 WS 时用（服务端 FastAPI 已带）</td><td>给 Agent 装电话听筒</td></tr>
+          <tr><td><code>asyncio</code></td><td><code>await</code>/<code>async</code> 的引擎：等请求时让出 CPU 去接别人</td><td>一个服务员看十桌的能力</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><b>为什么满篇 async</b>：对话服务的典型负载是「大量连接、各自等慢 IO」——等模型吐字、等上游 API。同步代码一个请求占一个线程，等着也是干等；异步代码等待时把服务员让出来服务别人。<strong>通信密集型服务的 Python，绕不开 async</strong>，这也是 JD 把「基本语法」和「通信方法」写在一句话里的深层原因。</p>
+
+    <p>机房盖完了。最后一章不写代码，写你怎么把它变成自己的东西。</p>
+  </div>
+</section>
+
+<section class="chapter" id="ch7">
+  <div class="ch-head">
+    <div class="ch-num"><b>07</b>CHAPTER<br/>41:10</div>
+    <div class="ch-title">
+      <h2>从 JD 到作品</h2>
+      <p>背概念没有出路，能演示才算会——三件拿得出手的事，和一条一周路径</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">回到开头那个改简历的朋友。他最后问：那我该背哪些八股？我说别背，<strong>面试官区分「背过」和「干过」，靠的是追问第三层</strong>——「SSE 是什么」能背；「为什么你们不用 WebSocket」开始见真章；「SSE 断线重连后从哪继续」只能干过的人才答得出。应对追问的办法只有一个：真的干一遍。</p>
+
+    <h3>三件可以演示的事</h3>
+    <p>把第 6 章那份文件跑起来之后，做这三件事，每件五分钟，做完你就超过简历上写「精通」的大多数人：</p>
+    <ul>
+      <li><strong>演示一：现场掐流。</strong>浏览器连着 <code>/ask/stream</code>，在 DevTools 的 Network 面板里指出那条 <code>event-stream</code> 请求，把 Events 流一条条点开给人看——再顺手打开任意一家 AI 产品做同样的事。「知道打字机底下是什么」这件事本身就是筛子。</li>
+      <li><strong>演示二：亲手不礼貌。</strong>给上游接口连发请求踩出 429，先让代码无脑重试，再加 <code>Retry-After</code> 退避，两边各截一张图。可靠性工程的全部直觉，就在这两张图的差别里。</li>
+      <li><strong>演示三：一次打断。</strong>开两个终端连 <code>/ws</code>，回答生成到一半时从另一端插入新消息，展示回答当场改道。这一下胜过十页 PPT 讲「全双工」。</li>
+    </ul>
+
+    <h3>一周路径</h3>
+    <p>如果从零开始，一周足够把这条 JD 从「认识」变成「摸过」：第 1–2 天把第 6 章的文件跑起来，故意弄坏每一行看会报什么错；第 3 天给 REST 端点补上 429 退避和超时；第 4 天用 <code>fetch</code> 手写一个不依赖 <code>EventSource</code> 的 SSE 客户端，逼自己解析一遍 <code>data:</code> 协议；第 5 天给 WS 端点加应用层心跳和断线重连；第 6–7 天把它部署出去，用真域名过一遍 TLS——很多 WS 问题只在线上出现。</p>
+    <p>做完这些，回头看那行 JD，它读起来会完全不同：<strong>不再是三个生词，而是三件你亲手接过的线</strong>。</p>
+    <p>模型的版本每年换三代，而这三种协议里最年轻的也已服役十五年。你花在这一章上的时间，不会随任何一次模型发布贬值。</p>
+  </div>
+</section>
+
+<div class="wrap epilogue" id="closing">
+  <h2>结语：协议比模型活得久</h2>
+  <p>写完这篇，那行 JD 在我眼里分了三层。表层是三个名词：SSE、WebSocket、RESTful API；中层是三种性格：普通话的规整、广播线的省心、电话的双向自由；底层是同一件事——<strong>Agent 的一切能力，最终都要经过一条线才能抵达别人</strong>。模型在数据中心里思考，而用户体验发生在协议的每一次收发之间。</p>
+  <p>这篇文章能给你的不是三条线的全部细节，而是三个带得走的判断：</p>
+  <div class="rules">
+    <div class="rule"><b>RULE 01 · 单向即够，不必双工</b><p>需求是「服务器往外推」就先试 SSE：它就是 HTTP，基础设施零改造，断线续传白送。WebSocket 的自由要用心跳、重连和补偿去还贷。</p></div>
+    <div class="rule"><b>RULE 02 · 状态码是对方的语气，不是错误提示</b><p>404 别重试，429 按书歇脚，500 退避再来。把状态码翻译成正确行动的那段代码，就是你系统里「可靠性」二字的实体。</p></div>
+    <div class="rule"><b>RULE 03 · 选型是接力分工，不是三选一</b><p>真实系统三条线同时在岗：REST 进数据，SSE 出回答，WS 承接实时。能按交互段位分工的人，才在设计系统，而不只是在调接口。</p></div>
+  </div>
+  <div class="limits"><b>这篇文没解决的：</b>多实例部署下 SSE 与 WS 的会话亲和（需要粘性路由或外置发布订阅）；语音帧的编解码与回声消除；HTTP/2、HTTP/3 对这三条线的改造——HTTP/3 上 WebSocket 走的是 RFC 9224 的 WebTransport 家族，又是另一篇手记的事了。</div>
+  <div class="links">
+    <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Server-sent_events" target="_blank" rel="noopener">MDN · Server-Sent Events</a>
+    <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/WebSockets_API" target="_blank" rel="noopener">MDN · WebSockets API</a>
+    <a href="https://www.rfc-editor.org/rfc/rfc6455" target="_blank" rel="noopener">RFC 6455 · WebSocket</a>
+    <a href="https://www.rfc-editor.org/rfc/rfc9110" target="_blank" rel="noopener">RFC 9110 · HTTP</a>
+    <a href="https://fastapi.tiangolo.com/zh/" target="_blank" rel="noopener">FastAPI 中文文档</a>
+    <a href="https://starrysea1412.github.io/agent-skillcraft/" target="_blank" rel="noopener">上期 · VOL.07 把能力打包成技能</a>
+  </div>
+</div>
+
+<footer class="wrap site-foot">
+  <div>
+    <div>造物手记 VOL.08 · Agent 的三条信号线</div>
+    <div style="margin-top:5px">SIGNAL / 2026.10 / 单文件 · 零依赖 · 确定性小样</div>
+  </div>
+  <div class="foot-note">文中报文与代码为讲解节选：HTTP 报文格式依 RFC 9110，SSE 事件流依 WHATWG HTML 标准，WebSocket 握手依 RFC 6455；FastAPI 示例可直接运行（上游函数需自行实现）。四枚小样为确定性模型：参数可调、行为可复现，时序数字为本地回环实测量级，非线上实测。插图由 GPT 系图像模型生成，字体为 LXGW 文楷（OFL）。</div>
+</footer>
+
+</main>
+
+<script>
+/* 四枚确定性小样 + 阅读进度条（VOL.08 · 零依赖，全部原生 DOM，无随机数）。 */
+(() => {
+  "use strict";
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const sec = (ms) => (ms / 1000).toFixed(2) + "s";
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+  const prog = $("#progress");
+  if (prog) {
+    const paint = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      prog.style.transform = "scaleX(" + (max > 0 ? h.scrollTop / max : 0) + ")";
+    };
+    addEventListener("scroll", paint, { passive: true });
+    addEventListener("resize", paint, { passive: true });
+    paint();
+  }
+
+  /* ══ DEMO 01 · 报文解剖台（REST）══ */
+  (() => {
+    const reqEl = $("#d1-req"), resEl = $("#d1-res");
+    if (!reqEl) return;
+    let scene = "read", status = 200, picked = null;
+
+    const REQ = {
+      read: [
+        ["start", "GET /v1/weather?city=beijing HTTP/1.1", "请求行：动词 GET ＋ 名词 /v1/weather ＋ 版本。整句只做一件事：读。"],
+        ["hdr", "Host: api.qingzhi.example", "寄给谁。示例域名，真实请求换成你的上游地址。"],
+        ["hdr", "Accept: application/json", "我要的货柜格式：JSON。你说人话还是说 JSON，得先讲好。"],
+        ["hdr", "User-Agent: qingzhi-agent/0.3 httpx/0.28", "小晴的名片：谁在打电话、用什么库。上游限流常按它统计。"],
+        ["gap", "", "这一行空行是报文的分界线：以上是信封，以下是货。GET 没有货，所以到此为止。"],
+      ],
+      call: [
+        ["start", "POST /v1/tools/call HTTP/1.1", "动词 POST：不是来读的，是来触发执行的。工具调用、下单、提交，都用它。"],
+        ["hdr", "Host: api.qingzhi.example", "寄给谁。"],
+        ["hdr", "Content-Type: application/json", "随信附上的货是 JSON——和 Accept 一个道理，反方向声明一次。"],
+        ["hdr", "Authorization: Bearer sk-****（脱敏）", "身份凭证。无状态的全靠它：服务器不记得你，每次都要自报家门。"],
+        ["gap", "", "空行分界。POST 下面有货。"],
+        ["body", '{"tool": "get_weather", "args": {"city": "beijing"}}', "货本体：调用哪个工具、带什么参数。模型决定调工具，就落在这行 JSON 里。"],
+      ],
+    };
+
+    const RES = {
+      200: [
+        ["start", "HTTP/1.1 200 OK", "语气：事情办好了。"],
+        ["hdr", "Content-Type: application/json", "货是 JSON。"],
+        ["hdr", "Content-Length: 51", "货的尺寸。客户端据此确认收齐。"],
+        ["gap", "", "空行分界。"],
+        ["body", '{"city":"beijing","temp":18,"wind":"NW-3","aqi":42}', "货本体。模型拿到这个才会接着说话。"],
+      ],
+      404: [
+        ["start", "HTTP/1.1 404 Not Found", "语气：资源不存在。重试也没有用——别重试。"],
+        ["hdr", "Content-Type: application/json", "错误也讲格式。"],
+        ["gap", "", "空行分界。"],
+        ["body", '{"error":"city_not_found","city":"beijng"}', "注意 args：城市名拼错了。Agent 该做的是改参数重问，不是原样再发一遍。"],
+      ],
+      429: [
+        ["start", "HTTP/1.1 429 Too Many Requests", "语气：你话太密了。"],
+        ["hdr", "Retry-After: 30", "服务器好心留的字条：歇 30 秒再来。可靠性工程的黄金 20 字符。"],
+        ["gap", "", "空行分界。"],
+        ["body", '{"error":"rate_limited","scope":"per-key"}', "限流按凭证统计。见到 429 立刻重试 = 排队插队，只会更黑。"],
+      ],
+      500: [
+        ["start", "HTTP/1.1 500 Internal Server Error", "语气：我这边出事了，不是你的错。"],
+        ["hdr", "Content-Type: application/json", "——"],
+        ["gap", "", "空行分界。"],
+        ["body", '{"error":"upstream_timeout","stage":"fetch"}', "上游超时。正确动作：指数退避、换个时间窗重试，而不是立刻再撞一次。"],
+      ],
+    };
+
+    const NOTE = {
+      200: "200 走正流程：把 JSON 里的温度、风力交回给模型，让它组织成人话。",
+      404: "404 是「别重试」的语气——问题在参数不在网络。把它原样转告模型，让它改。",
+      429: "429 拆开读：先看 Retry-After，睡够再试。立刻重试的 Agent 只会被拉黑得更彻底。",
+      500: "500 说明服务器-side 出事。指数退避（1s → 2s → 4s）换个窗口，别原地硬撞。",
+    };
+
+    const CLS = { start: "st-line", hdr: "hd-line", gap: "gap-line", body: "bd-line" };
+
+    function wire(el, rows) {
+      el.innerHTML = rows.map(([k, txt, note]) =>
+        k === "gap"
+          ? `<div class="wrow ${CLS[k]}" data-note="${esc(note)}"><span class="wgap">· · ·</span><span class="wnote">空行</span></div>`
+          : `<div class="wrow ${CLS[k]}" data-note="${esc(note)}"><span>${esc(txt)}</span></div>`
+      ).join("");
+    }
+
+    function render() {
+      picked = null;
+      wire(reqEl, REQ[scene]);
+      wire(resEl, RES[status]);
+      const tag = $("#d1-codetag");
+      tag.textContent = status === 200 ? "200 OK" : status === 404 ? "404 Not Found"
+        : status === 429 ? "429 Too Many Requests" : "500 Internal Server Error";
+      tag.className = "st-" + status;
+      $("#d1-reqline").textContent = scene === "read" ? "GET /v1/weather?city=beijing" : "POST /v1/tools/call";
+      $("#d1-note").textContent = NOTE[status];
+    }
+
+    $$("#d1-scene button").forEach((b) => b.addEventListener("click", () => {
+      $$("#d1-scene button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+      scene = b.dataset.scene; render();
+    }));
+    $$("#d1-status button").forEach((b) => b.addEventListener("click", () => {
+      $$("#d1-status button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+      status = +b.dataset.status; render();
+    }));
+    const NOTE_HEAD = { "st-line": "① 请求行 / 状态行", "hd-line": "② header：信封", "gap-line": "③ 空行：信封与货的分界", "bd-line": "④ body：货" };
+    [reqEl, resEl].forEach((el) => el.addEventListener("click", (e) => {
+      const row = e.target.closest(".wrow"); if (!row) return;
+      $$(".wrow", el).forEach((r) => r.classList.remove("pick"));
+      if (picked === row) { picked = null; return; }
+      picked = row; row.classList.add("pick");
+      $("#d1-note").textContent = NOTE_HEAD[row.className.split(" ")[1] || "st-line"] + " — " + row.dataset.note;
+    }));
+    render();
+  })();
+
+  /* ══ DEMO 02 · 首字竞速台（SSE）══ */
+  (() => {
+    const root = $("#demo2"); if (!root) return;
+    const ANSWER = "北京今天晴，18°C，西北风三级，湿度 40%，空气质量优。清晨六到九点风小凉爽，适合慢跑；午后升温到 22°C，紫外线偏强，建议改约傍晚。";
+    const TTFT_MODEL = 250; // 模型吐出第一个 token 的固定耗时
+    const speed = $("#d2-speed"), rtt = $("#d2-rtt"), len = $("#d2-len");
+    let runId = 0;
+
+    const sync = () => {
+      $("#d2-v-speed").textContent = speed.value + " tok/s";
+      $("#d2-v-rtt").textContent = rtt.value + " ms";
+      $("#d2-v-len").textContent = len.value + " tok";
+    };
+    [speed, rtt, len].forEach((i) => i.addEventListener("input", sync)); sync();
+
+    function plan() {
+      const S = +speed.value, R = +rtt.value, N = +len.value;
+      const gen = N / S * 1000;                       // 生成总耗时
+      const aFirst = R + TTFT_MODEL + gen;            // 甲：全部生成完才见字
+      const bFirst = R + TTFT_MODEL;                  // 乙：首事件到达
+      const events = [];                              // 每 3 tok 一个事件
+      for (let i = 3; i <= N; i += 3) events.push({ t: bFirst + (i / S * 1000 - TTFT_MODEL) * (i / N), tok: i });
+      const bEnd = R + TTFT_MODEL + gen;              // 流式最后一包（含单程尾差）
+      return { S, R, N, gen, aFirst, bFirst, bEnd, events };
+    }
+
+    function sliceText(N) {
+      const chars = ANSWER.replace(/[，。；：]/g, (m) => m + "\u0001").split("\u0001").filter(Boolean);
+      // 把回答切成 N 个 token 片：按字符均匀切
+      const total = ANSWER.length, out = [];
+      let idx = 0;
+      for (let i = 1; i <= N; i++) {
+        const cut = Math.round(total * i / N);
+        out.push(ANSWER.slice(idx, cut)); idx = cut;
+      }
+      if (idx < total) out[out.length - 1] += ANSWER.slice(idx);
+      return out;
+    }
+
+    function run() {
+      const id = ++runId;
+      const P = plan(), pieces = sliceText(P.N);
+      const trackA = $("#d2-lane-a .track"), trackB = $("#d2-lane-b .track");
+      trackA.querySelectorAll(".pkt,.pkt-big").forEach((n) => n.remove());
+      trackB.querySelectorAll(".pkt,.pkt-big").forEach((n) => n.remove());
+      $("#d2-lane-a .fill").style.width = "0%";
+      $("#d2-lane-b .fill").style.width = "0%";
+      $("#d2-ttft-a").textContent = "TTFT —"; $("#d2-ttft-b").textContent = "TTFT —";
+      $("#d2-out-a").innerHTML = '<span class="ph">（还在等待整段……）</span>';
+      $("#d2-out-b").innerHTML = '<span class="ph">（等待首字……）</span>';
+      $("#d2-log").innerHTML = "";
+      const end = P.aFirst + 400;
+      const dil = Math.max(2, end / 4200);            // 时间压缩：回放不超过 ~4s，数字仍按真实值显示
+      const t0 = performance.now();
+      let shownA = false, firstB = false, logAt = 0;
+      const LOG_TOTAL = 9;
+      const log = $("#d2-log");
+
+      function frame(now) {
+        if (id !== runId) return;
+        const t = (now - t0) * dil;
+        // 甲：生成进度（0→100%），最后一次寄出
+        const pa = clamp((t - P.R) / P.gen, 0, 1) * 100;
+        $("#d2-lane-a .fill").style.width = pa + "%";
+        if (t >= P.aFirst && !shownA) {
+          shownA = true;
+          const big = document.createElement("span"); big.className = "pkt-big"; big.style.left = "calc(100% - 26px)";
+          trackA.appendChild(big);
+          $("#d2-out-a").textContent = ANSWER;
+          $("#d2-ttft-a").textContent = "TTFT " + sec(P.aFirst);
+        }
+        // 乙：事件逐个到达
+        const arrived = P.events.filter((e) => e.t <= t);
+        const pb = (arrived.length / P.events.length) * 100;
+        $("#d2-lane-b .fill").style.width = pb + "%";
+        if (arrived.length) {
+          const last = arrived[arrived.length - 1].tok;
+          $("#d2-out-b").textContent = pieces.slice(0, last).join("");
+          const wantPkts = Math.min(arrived.length, 26);
+          const have = trackB.querySelectorAll(".pkt").length;
+          for (let i = have; i < wantPkts; i++) {
+            const pk = document.createElement("span"); pk.className = "pkt";
+            pk.style.left = (P.events[Math.min(i * 3, P.events.length - 1)].t / end) * 100 + "%";
+            trackB.appendChild(pk);
+          }
+        }
+        if (t >= P.bFirst && !firstB) { firstB = true; $("#d2-ttft-b").textContent = "TTFT " + sec(P.bFirst); }
+        // SSE 日志：均匀抽 9 条回放
+        const step = Math.max(1, Math.floor(P.events.length / LOG_TOTAL));
+        const shown = P.events.filter((e, i) => i % step === 0 && e.t <= t).length;
+        if (shown > logAt) {
+          for (let i = logAt; i < shown && i < P.events.length; i += step) {
+            const e = P.events[i];
+            const txt = (e.tok * 3 >= P.N + 3) ? "data: [DONE]"
+              : "data: {\"delta\": \"" + pieces.slice(e.tok - 3, e.tok).join("") + "\"}";
+            log.insertAdjacentHTML("beforeend",
+              `<div class="wrow bd-line"><span class="wt">${sec(e.t)}</span><span>${esc(txt)}</span></div>`);
+            log.scrollTop = log.scrollHeight;
+            logAt = i + 1;
+          }
+        }
+        if (t < end) requestAnimationFrame(frame);
+        else {
+          $("#d2-na").textContent = sec(P.aFirst);
+          $("#d2-nb").textContent = sec(P.bFirst);
+          $("#d2-nc").textContent = "×" + (P.aFirst / P.bFirst).toFixed(1);
+          $("#d2-nd").textContent = "同时 · " + sec(P.aFirst);
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+    $("#d2-run").addEventListener("click", run);
+  })();
+
+  /* ══ DEMO 03 · 双工对讲机（WebSocket）══ */
+  (() => {
+    const root = $("#demo3"); if (!root) return;
+    let mode = "half", beat = false, runId = 0;
+
+    // 剧本：t0, t1(秒), 谁谁, 什么块, 文案。全部确定性。
+    function script(m) {
+      const half = [
+        [0.0, 0.6, "you", "talk", "说需求（查天气＋跑步建议）"],
+        [0.6, 0.75, "ctl", "send", "整段听完才发出"],
+        [0.75, 1.4, "ai", "think", "思考"],
+        [1.4, 3.9, "ai", "talk", "生成并播报回答（第一轮，没有紫外线数据）"],
+        [1.5, 3.9, "you", "queue", "插话：「还有紫外线指数吗」——半双工，排不进话"],
+        [3.9, 4.05, "ctl", "send", "这才发出"],
+        [4.05, 4.6, "ai", "think", "再想一轮"],
+        [4.6, 6.4, "ai", "talk", "第二轮回答：补上紫外线"],
+      ];
+      const full = [
+        [0.0, 0.6, "you", "talk", "说需求（边说边作为帧送达）"],
+        [0.35, 0.6, "ai", "think", "边听边想"],
+        [0.6, 3.1, "ai", "talk", "生成并播报回答"],
+        [1.5, 1.62, "you", "talk", "插话一帧，当场送达"],
+        [1.62, 1.9, "ai", "fix", "改道：并入紫外线"],
+        [1.9, 3.1, "ai", "talk", "继续播报（已含紫外线）"],
+      ];
+      return m === "half" ? half : full;
+    }
+
+    const CLS = { talk: "blk", think: "blk soft", fix: "blk fix", queue: "blk ghost", send: "blk send", ping: "blk ping", lost: "blk lost", re: "blk re" };
+
+    function render(cut) {
+      const rows = { you: $("#d3-row-you"), ai: $("#d3-row-ai"), ctl: $("#d3-row-ctl") };
+      Object.values(rows).forEach((r) => r.innerHTML = "");
+      const scriptRows = script(mode).filter((r) => !(cut && r[0] >= cut.t && mode === "full"));
+      const endT = mode === "half" ? 6.4 : (cut ? cut.newEnd : 3.1);
+      for (const [t0, t1, who, kind, text] of scriptRows) {
+        const d = document.createElement("div");
+        d.className = CLS[kind] + (who === "you" ? " by-you" : who === "ai" ? " by-ai" : " by-ctl");
+        d.style.left = (t0 / endT * 100) + "%";
+        d.style.width = Math.max((t1 - t0) / endT * 100, 7.5) + "%";
+        d.innerHTML = `<span>${esc(text)}</span>`;
+        d.title = t0.toFixed(2) + "s – " + t1.toFixed(2) + "s";
+        rows[who].appendChild(d);
+      }
+      // 心跳与断线只画在线路道
+      if (beat && mode === "full") {
+        for (let t = 1; t < endT; t += 3) {
+          const d = document.createElement("div");
+          d.className = CLS.ping; d.style.left = (t / endT * 100) + "%"; d.style.width = (1.1 / endT * 100) + "%";
+          d.innerHTML = "<span>PING→PONG</span>"; rows.ctl.appendChild(d);
+        }
+      }
+      if (cut && mode === "full") {
+        const d = document.createElement("div");
+        d.className = CLS.lost; d.style.left = (cut.t / endT * 100) + "%"; d.style.width = ((cut.t + 1.2) / endT * 100 - cut.t / endT * 100) + "%";
+        d.innerHTML = "<span>CONNECTION LOST —— 1.2s 后重连；断线期间的帧不补发，需重新同步</span>";
+        rows.ctl.appendChild(d);
+      }
+      $("#d3-ruler").innerHTML = Array.from({ length: 8 }, (_, i) => `<span>${(i * endT / 7).toFixed(1)}s</span>`).join("");
+      if (mode === "half") {
+        $("#d3-na").textContent = "6.40s"; $("#d3-nb").textContent = "2.40s 后"; $("#d3-nc").textContent = "100%（两轮凑齐）";
+        $("#d3-note").textContent = "半双工：插话排到第一轮结束才被听见，多付两轮往返。";
+      } else {
+        $("#d3-na").textContent = cut ? sec(cut.newEnd * 1000) : "3.10s";
+        $("#d3-nb").textContent = "0.12s 内"; $("#d3-nc").textContent = "100%（一轮内）";
+        $("#d3-note").textContent = cut
+          ? "断线重连后，2.0s–3.2s 之间应送达的帧永远丢了——这是和 SSE 内建续传最本质的差别。"
+          : "全双工：插话一帧送达，回答当场改道，一轮收工。";
+      }
+      $("#d3-cut").disabled = mode !== "full" || !!cut;
+      $("#d3-cut").textContent = cut ? "已断线——重置再看" : "模拟断线";
+    }
+
+    $("#d3-mode").addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      $$("#d3-mode button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+      mode = b.dataset.mode;
+      runId++; render(null);
+    });
+    $("#d3-heart").addEventListener("change", (e) => { beat = e.target.checked; render(currentCut); });
+    $("#d3-run").addEventListener("click", () => { currentCut = null; render(null); });
+    let currentCut = null;
+    $("#d3-cut").addEventListener("click", () => {
+      if (currentCut) { currentCut = null; render(null); return; }
+      currentCut = { t: 2.0, newEnd: 4.3 };
+      render(currentCut);
+    });
+    render(null);
+  })();
+
+  /* ══ DEMO 04 · 选型法庭 ══ */
+  (() => {
+    const root = $("#demo4"); if (!root) return;
+    const CASES = [
+      { t: "手机 App 启动时拉取今天的天气", d: "一次查询，拿到数据就渲染首屏。没有人在等流，也没有人想插话。", best: "rest", ok: null, pts: 2,
+        why: { rest: "✅ 最优。一问一答，答完即走——这是 REST 的主场，也是小晴第一棒的原型。", sse: "❌ 方向反了：SSE 是服务器往外推，这里是客户端往里拉。", ws: "❌ 杀鸡用牛刀：为一次查询握手建长连，握手的成本比查询本身还贵。" },
+        ref: "参照：几乎所有天气/行情类 App 的首屏请求。" },
+      { t: "聊天产品里，模型的回答逐字浮现", d: "一段几百 token 的回答，用户想边生成边看，不想盯着转圈。", best: "sse", ok: null, pts: 2,
+        why: { rest: "❌ 能做，但用户要等整段生成完——TTFT 直接糊脸（回到 DEMO 02 拖一次就懂）。", sse: "✅ 最优。单向流刚好够用，HTTP 基础设施全兼容，断线还送自动续传。", ws: "🤔 能做但过重：双向能力闲置，还要自管心跳与重连；很多老代理还会拦握手。" },
+        ref: "参照：各家模型 API 的 stream=true，底层全是 text/event-stream。" },
+      { t: "语音助手实时对话，用户能随时打断", d: "音频帧高频双向流动，用户说话时助手要立刻停下听。", best: "ws", ok: null, pts: 2,
+        why: { rest: "❌ 半双工注定无法打断：回答一旦开始，你的输入只能等下一轮（回到 DEMO 03 看排队）。", sse: "❌ 只出不进：语音是双向流，缺的那条进线正是「打断」。", ws: "✅ 最优。全双工＋帧头只有几字节，音频流和打断帧同线走。" },
+        ref: "参照：OpenAI Realtime API 等语音实时产品走的都是 WebSocket。" },
+      { t: "上传一批文件，进度条从 0% 涨到 100%", d: "服务器处理很久，网页要实时显示进度，但用户不需要中途插话。", best: "sse", ok: "ws", pts: 2,
+        why: { rest: "🤔 轮询也能凑合，但每次轮询都是完整请求，进度密时既吵又卡。", sse: "✅ 最优。单向推送刚好够，连接普通 HTTP，进度事件一包一包推下来。", ws: "🟡 可行但过重（1 分）：双向能力闲置，还得自管心跳重连——杀鸡用牛刀。" },
+        ref: "参照：主流网盘/导出任务的进度推送。" },
+      { t: "小晴每小时从汇率服务拉一次价格表", d: "调用方是程序不是人：没有首字延迟焦虑，一小时一次，错过一秒无所谓。", best: "rest", ok: null, pts: 2,
+        why: { rest: "✅ 最优。定时任务＋一次查询＝cron + httpx，一条请求的事。", sse: "❌ 为了每小时一句保持一条永久连接，服务器直呼冤枉。", ws: "❌ 同上，还更贵。" },
+        ref: "参照：后端之间的同步任务，教科书式 REST。" },
+      { t: "协作白板：两个人同时拖动同一个图形", d: "毫秒级互见，任何一边的运动都要即时映到对方屏幕上。", best: "ws", ok: null, pts: 2,
+        why: { rest: "❌ 每秒几十次的移动事件，整份报文来回，延迟和开销都爆炸。", sse: "❌ 只能单边推，另一边的动作发不出去——白板缺一半就不成白板。", ws: "✅ 最优。高频小帧＋双向，正是帧协议的设计目标。" },
+        ref: "参照：Figma 类协同产品的实时通道。" },
+    ];
+    let idx = 0, score = 0, answered = false, finished = false;
+    const btns = $$("#d4-btns button");
+
+    function show() {
+      const c = CASES[idx];
+      $("#d4-no").textContent = `案件 ${idx + 1} / ${CASES.length}`;
+      $("#d4-title").textContent = c.t;
+      $("#d4-desc").textContent = c.d;
+      $("#d4-verdict").textContent = "选一条，判决马上到。";
+      $("#d4-verdict").className = "court-verdict";
+      btns.forEach((b) => { b.disabled = false; b.classList.remove("good", "bad", "meh"); });
+      $("#d4-next").disabled = true;
+      $("#d4-next").textContent = idx === CASES.length - 1 ? "看成绩 →" : "下一案 →";
+      answered = false;
+    }
+    btns.forEach((b) => b.addEventListener("click", () => {
+      if (answered) return;
+      answered = true;
+      const c = CASES[idx], pick = b.dataset.p;
+      const good = pick === c.best, meh = pick === c.ok;
+      score += good ? c.pts : meh ? 1 : 0;
+      $("#d4-score").textContent = score;
+      b.classList.add(good ? "good" : meh ? "meh" : "bad");
+      btns.forEach((x) => { if (x.dataset.p === c.best) x.classList.add("good"); x.disabled = true; });
+      const v = $("#d4-verdict");
+      v.innerHTML = esc(c.why[pick]) + `<small>${esc(c.ref)}</small>`;
+      v.className = "court-verdict " + (good ? "good" : meh ? "meh" : "bad");
+      $("#d4-next").disabled = false;
+    }));
+    $("#d4-next").addEventListener("click", () => {
+      if (finished) { finished = false; idx = 0; score = 0; $("#d4-score").textContent = "0"; show(); return; }
+      if (idx < CASES.length - 1) { idx++; show(); }
+      else {
+        const rank = score >= 10 ? "信号工执业资格到手" : score >= 7 ? "能上岗，细节再补" : "回炉三条线，再来一遍";
+        $("#d4-no").textContent = "庭审结束";
+        $("#d4-title").textContent = `最终得分 ${score} / 12`;
+        $("#d4-desc").textContent = rank + "——错过的题回到对应章节，把报文和时序再看一遍。";
+        $("#d4-verdict").textContent = "点「重新开庭」再来一轮。";
+        $("#d4-verdict").className = "court-verdict";
+        $("#d4-next").textContent = "重新开庭 →";
+        finished = true;
+      }
+    });
+    show();
+  })();
+})();
+
+</script>
+</body>
+</html>

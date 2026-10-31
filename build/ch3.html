@@ -1,0 +1,73 @@
+<section class="chapter" id="ch3">
+  <div class="ch-head">
+    <div class="ch-num"><b>03</b>CHAPTER<br/>12:00</div>
+    <div class="ch-title">
+      <h2>SSE：流式输出的血管</h2>
+      <p>打字机效果的真相：它不是什么新技术，是一段永远不写完的 HTTP 响应</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p class="lede">很多人猜打字机效果是 WebSocket 做的。猜错了——你在任何一家主流 AI 产品里按 F12 打开 Network 面板，找到那条回答请求，它的 <code>Content-Type</code> 几乎都写着 <code>text/event-stream</code>。<strong>SSE，Server-Sent Events。</strong></p>
+
+    <h3>一段永远不结束的 HTTP 响应</h3>
+    <p>SSE 的原理朴素到让人失望：服务器接到请求后<strong>不关连接</strong>，把响应体当成长长的传送带，一段一段往里写。每段以 <code>data:</code> 开头、以一个空行结尾：</p>
+    <div class="code"><div class="code-bar"><b>text/event-stream · 报文原文</b><span>HTTP/1.1 200（Content-Type: text/event-stream）</span></div>
+<pre>data: {"delta": "北京今天"}
+data: {"delta": "晴，18°C，"}
+data: {"delta": "西北风三级。"}
+data: [DONE]</pre></div>
+    <p>就这么简单。没有新协议，没有新握手，就是一条普通的 HTTP 响应，只是<strong>永远不写句号</strong>。客户端这边，浏览器内建了 <code>EventSource</code> 接口，三行代码接住流；各家模型 SDK 里那个 <code>stream=True</code>，底下流的也是这同一种东西。</p>
+
+    <h3>为什么是 SSE，不是 WebSocket</h3>
+    <p>LLM 的输出是天然的单向流：模型往外吐字，用户不需要在这个通道里插话——话是用户先说完的。这种「服务器单方面广播」的场景，SSE 比WebSocket 合算得多：</p>
+    <ul>
+      <li><strong>它就是 HTTP。</strong>代理、CDN、网关、负载均衡，整个互联网的基础设施不用任何改造就认得它；WebSocket 的 <code>Upgrade</code> 握手在很多老代理面前会被拦下来。</li>
+      <li><strong>断线重连是内建的。</strong><code>EventSource</code> 断了自动重连，还带着 <code>Last-Event-ID</code> 头告诉服务器「我听到第几条了」，服务器从这个位置续传；每条事件还可以带 <code>retry:</code> 字段指定重连间隔。WebSocket 断了就是断了，心跳、重连、续传，全要自己写。</li>
+      <li><strong>代价清单极短。</strong>唯一的硬伤是方向：只能服务器→客户端。对小晴来说这不是硬伤，是刚好。</li>
+    </ul>
+    <p class="note"><b>一个值得知道的坑</b>：浏览器原生的 <code>EventSource</code> 只会发 GET 请求。所以当你需要 POST 一个大 prompt 去换流式响应时，SDK 们都不用它——它们拿 <code>fetch</code> 的 ReadableStream 手写 SSE 解析。<strong>「知道 SSE 报文格式」的实际价值就在这</b>：绕开封装，直接读流。</p>
+
+    <h3>首字延迟的经济学</h3>
+    <p>流式真正的胜利不是「快」，是<strong>把等待变成阅读</strong>。同一份 120 token 的回答，非流式要等全部生成完才见到第一个字；流式几百毫秒就见字。人感觉第二台机器「快得多」，尽管两台机器<strong>生成完的总时间一模一样</strong>。这个差别有个行业名字：TTFT，Time To First Token，首 token 时间——它是所有对话产品的核心指标之一。</p>
+
+    <div class="demo" id="demo2">
+      <div class="demo-head">
+        <span class="demo-tag">DEMO 02 / SSE</span>
+        <span class="demo-title">首字竞速台<span class="hint">同一个回答，两条路：憋大招 vs 边写边流</span></span>
+      </div>
+      <div class="demo-body">
+        <div class="controls">
+          <div class="ctl"><label>模型生成速度 <b id="d2-v-speed">60 tok/s</b></label><input type="range" id="d2-speed" min="20" max="120" step="5" value="60"/></div>
+          <div class="ctl"><label>网络往返 RTT <b id="d2-v-rtt">300 ms</b></label><input type="range" id="d2-rtt" min="50" max="800" step="25" value="300"/></div>
+          <div class="ctl"><label>回答长度 <b id="d2-v-len">120 tok</b></label><input type="range" id="d2-len" min="60" max="240" step="10" value="120"/></div>
+          <div class="ctl ctl-btn"><button class="run" id="d2-run">开始对比</button></div>
+        </div>
+        <div class="race">
+          <div class="lane" id="d2-lane-a">
+            <div class="lane-cap"><b>甲 · 非流式</b><span>整段生成完，一次性寄达</span></div>
+            <div class="track"><i class="fill"></i><span class="pkt pkt-big"></span><span class="lane-ttft" id="d2-ttft-a">TTFT —</span></div>
+            <div class="out"><div class="out-pane" id="d2-out-a"><span class="ph">（还在等待整段……）</span></div></div>
+          </div>
+          <div class="lane" id="d2-lane-b">
+            <div class="lane-cap"><b>乙 · SSE 流式</b><span>出一个词寄一个词</span></div>
+            <div class="track"><i class="fill"></i><span class="lane-ttft" id="d2-ttft-b">TTFT —</span></div>
+            <div class="out"><div class="out-pane" id="d2-out-b"><span class="ph">（等待首字……）</span></div></div>
+          </div>
+        </div>
+        <div class="big-num" id="d2-nums">
+          <div>甲 首字<b id="d2-na">—</b></div>
+          <div>乙 首字<b id="d2-nb">—</b></div>
+          <div>感知差距<b id="d2-nc">—</b></div>
+          <div>两者写完<b id="d2-nd">—</b></div>
+        </div>
+        <div class="wire wire-slim" id="d2-log"></div>
+        <p class="hintline" id="d2-hint">底部是乙通道收到的 SSE 事件流原文（节选回放）。</p>
+      </div>
+      <div class="demo-foot"><b>确定性模型</b>：首 token 时间固定 250 ms，每 3 个 token 打包一个 <code>data:</code> 事件，事件到达按生成节拍推进。拖大 RTT 再跑一次——流式的优势会缩水但不会消失，这就是为什么 CDN 边缘节点值得做。</div>
+    </div>
+
+    <p>跑几次你会看到一个反直觉的事实：拖动「回答长度」对甲的首字伤害巨大，对乙几乎没有影响——<strong>非流式的首字时间里混进了整篇作文的工时，流式的首字时间只含网络和第一口生成</strong>。这就是为什么 2023 年之后，「API 支不支持 stream」成了对话类产品选型的第一道门槛。</p>
+
+    <p>但单向血管有一个天然盲区：它听不见。如果用户在小晴说话的时候想插一句「等等，还有紫外线吗」——SSE 的传送带不会为任何人回头。要会打断的对话，得换第三条线。</p>
+  </div>
+</section>

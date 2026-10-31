@@ -1,0 +1,4 @@
+build/_full-*.ttf
+build/_*.png
+*.log
+node_modules/

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<link rel="preload" href="../assets/fonts/wenkai-regular.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="../assets/fonts/wenkai-medium.woff2" as="font" type="font/woff2" crossorigin/>
+<title>Agent 的三条信号线 · 技术栈全景图</title>
+<style>
+@font-face{font-family:"LXGW WenKai";src:url("../assets/fonts/wenkai-regular.woff2") format("woff2");font-weight:300 599;font-display:swap}
+@font-face{font-family:"LXGW WenKai";src:url("../assets/fonts/wenkai-medium.woff2") format("woff2");font-weight:600 900;font-display:swap}
+:root{
+  --bg:#0b110e;--surface:#121a15;--raised:#17221b;
+  --ink:#dbe7de;--ink2:#b3c4b8;--muted:#86988c;--faint:#5c6e63;
+  --line:#24352b;--line2:#1b2820;
+  --phos:#63e6a2;--phos-soft:rgba(99,230,162,.1);
+  --amber:#e6b45c;--amber-soft:rgba(230,180,92,.1);
+  --blue:#7fb4e0;--blue-soft:rgba(127,180,224,.1);
+  --red:#e07a5f;
+  --mono:ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{width:900px;background:var(--bg);color:var(--ink);font-family:"LXGW WenKai",-apple-system,"PingFang SC",sans-serif;padding:44px 46px 38px;-webkit-font-smoothing:antialiased;
+  background-image:
+    linear-gradient(rgba(99,230,162,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(99,230,162,.03) 1px,transparent 1px),
+    radial-gradient(700px 340px at 84% -6%,rgba(99,230,162,.07),transparent 62%);
+  background-size:44px 44px,44px 44px,auto}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:2px solid var(--line);padding-bottom:15px}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--phos);margin:0 0 9px}
+h1{margin:0;font-size:33px;line-height:1.2;letter-spacing:-.01em;font-weight:800}
+h1 em{font-style:normal;color:var(--phos)}
+.head .meta{text-align:right;font-family:var(--mono);font-size:9.5px;line-height:1.95;color:var(--faint);letter-spacing:.06em;white-space:nowrap}
+.dek{margin:16px 0 20px;font-size:13px;line-height:1.85;color:var(--ink2);max-width:760px}
+
+.sect{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--faint);margin:0 0 8px}
+.sect b{color:var(--amber)}
+.lines{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.line-card{border:1px solid var(--line);border-radius:4px;background:var(--surface);overflow:hidden}
+.line-card .lh{padding:10px 14px 8px;border-bottom:1px solid var(--line2)}
+.line-card.rest .lh{background:var(--amber-soft);border-top:2px solid var(--amber)}
+.line-card.sse .lh{background:var(--phos-soft);border-top:2px solid var(--phos)}
+.line-card.ws .lh{background:var(--blue-soft);border-top:2px solid var(--blue)}
+.line-card .lh b{font-size:16.5px;display:block;line-height:1.3}
+.line-card.rest .lh b{color:var(--amber)}
+.line-card.sse .lh b{color:var(--phos)}
+.line-card.ws .lh b{color:var(--blue)}
+.line-card .lh small{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;color:var(--faint)}
+.line-card ul{list-style:none;margin:0;padding:9px 14px 11px}
+.line-card li{display:grid;grid-template-columns:58px 1fr;gap:8px;font-size:10.5px;line-height:1.65;padding:4px 0;border-bottom:1px dashed var(--line2)}
+.line-card li:last-child{border-bottom:0}
+.line-card li i{font-style:normal;font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;color:var(--faint);padding-top:2px}
+.line-card li b{font-weight:650;color:var(--ink)}
+
+.relay{display:grid;grid-template-columns:1fr 26px 1fr 26px 1fr;gap:0;align-items:stretch;margin-bottom:2px}
+.rstep{border:1px solid var(--line);border-radius:4px;background:var(--raised);padding:11px 14px}
+.rstep b{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;margin-bottom:5px}
+.rstep p{margin:0;font-size:10.5px;line-height:1.7;color:var(--ink2)}
+.rstep .en{font-family:var(--mono);font-size:8px;color:var(--faint);letter-spacing:.08em;display:block;margin-top:6px}
+.rstep.s1{border-top:2px solid var(--amber)}.rstep.s1 b{color:var(--amber)}
+.rstep.s2{border-top:2px solid var(--phos)}.rstep.s2 b{color:var(--phos)}
+.rstep.s3{border-top:2px solid var(--blue)}.rstep.s3 b{color:var(--blue)}
+.rarr{display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:13px}
+
+.base{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.base-card{border:1px solid var(--line);border-radius:4px;background:var(--surface);padding:11px 14px}
+.base-card h4{margin:0 0 7px;font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;color:var(--faint);font-weight:700}
+.base-card .chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-family:var(--mono);font-size:9.5px;border:1px solid var(--line);border-radius:2px;padding:3px 8px;color:var(--ink2);background:var(--raised)}
+.chip.hot{border-color:var(--phos-deep,#2f7a55);color:var(--phos)}
+
+.foot{display:grid;grid-template-columns:1.35fr 1fr;gap:26px;margin-top:20px;border-top:2px solid var(--line);padding-top:14px}
+.foot h4{margin:0 0 7px;font-family:var(--mono);font-size:8.5px;letter-spacing:.2em;color:var(--amber);font-weight:700}
+.foot p{margin:0 0 7px;font-size:10.5px;line-height:1.8;color:var(--ink2)}
+.eq{font-family:var(--mono);font-size:9.5px;color:var(--ink2);line-height:2.05}
+.eq b{color:var(--amber);font-weight:600}
+.eq i{color:var(--phos);font-style:normal}
+.stamp{display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;color:var(--faint)}
+.stamp b{color:var(--phos);font-weight:600}
+</style>
+</head>
+<body>
+<div class="head">
+  <div>
+    <p class="eyebrow">FIELD NOTES · VOL.08 · SIGNAL MAP</p>
+    <h1>Agent 的<em>三条信号线</em> · 技术栈全景</h1>
+  </div>
+  <div class="meta">造物手记 VOL.08<br/>2026.10<br/>StarrySea1412</div>
+</div>
+<p class="dek">Agent 的智能住在模型里，能力住在通信里。这张图把一次服务的通信全景拆成三段：上半部是三条线各自的户口，中部是它们在真实服务里的接力分工，底部是公共的协议与 Python 底座。选型不是三选一，是给每段交互找到它的线。</p>
+
+<p class="sect">SECTION A · <b>三条线的户口</b> — 每条线六个维度</p>
+<div class="lines">
+  <div class="line-card rest">
+    <div class="lh"><b>RESTful API</b><small>HTTP/1.1 · RFC 9110 · 1991–</small></div>
+    <ul>
+      <li><i>方向</i><b>一问一答，答完即断</b></li>
+      <li><i>语法</i><b>名词（URI）＋动词（method）</b></li>
+      <li><i>语气</i><b>状态码：200 / 404 / 429 / 500</b></li>
+      <li><i>恢复</i><b>重发即可，无状态可任意扩容</b></li>
+      <li><i>开销</i><b>整份报文，header 以百字节计</b></li>
+      <li><i>场景</i><b>工具调用、查询、表单</b></li>
+    </ul>
+  </div>
+  <div class="line-card sse">
+    <div class="lh"><b>SSE</b><small>text/event-stream · WHATWG HTML</small></div>
+    <ul>
+      <li><i>方向</i><b>服务器 → 客户端，单向流</b></li>
+      <li><i>形态</i><b>一段永远不写完的 HTTP 响应</b></li>
+      <li><i>格式</i><b>data: 行 ＋ 空行，事件逐包推送</b></li>
+      <li><i>恢复</i><b>内建：自动重连 + Last-Event-ID 续传</b></li>
+      <li><i>开销</i><b>每事件一行 data + 空行</b></li>
+      <li><i>场景</i><b>流式回答（TTFT）、进度推送</b></li>
+    </ul>
+  </div>
+  <div class="line-card ws">
+    <div class="lh"><b>WebSocket</b><small>RFC 6455 · 2011–</small></div>
+    <ul>
+      <li><i>方向</i><b>双向同时，随时开口</b></li>
+      <li><i>形态</i><b>借 HTTP 握手（101），改说帧协议</b></li>
+      <li><i>会话</i><b>一次握手，长期活着</b></li>
+      <li><i>恢复</i><b>自管：心跳、重连、断线补偿</b></li>
+      <li><i>开销</i><b>帧头仅 2–10 字节</b></li>
+      <li><i>场景</i><b>语音（可打断）、协同、实时游戏</b></li>
+    </ul>
+  </div>
+</div>
+
+<p class="sect" style="margin-top:18px">SECTION B · <b>一次服务的接力</b> — 同一段回答，三种协议各跑一棒</p>
+<div class="relay">
+  <div class="rstep s1"><b>第一棒 · REST</b><p>模型决定调工具：向天气服务发一次标准请求，拿回温度风力，连接即断。429 时按 Retry-After 歇脚。</p><span class="en">GET /v1/weather → 200 OK</span></div>
+  <div class="rarr">→</div>
+  <div class="rstep s2"><b>第二棒 · SSE</b><p>模型开始回答：不憋整段，一个词一个词往流里写。用户几百毫秒见首字，等待变成阅读。</p><span class="en">GET /ask/stream → event-stream</span></div>
+  <div class="rarr">→</div>
+  <div class="rstep s3"><b>第三棒 · WS</b><p>换语音形态：音频帧高频双向流动，用户说到一半能打断，回答当场改道。</p><span class="en">WS /ws · 双工 · 心跳保活</span></div>
+</div>
+
+<div class="base">
+  <div class="base-card">
+    <h4>COMMON BASE · 协议公共底座</h4>
+    <div class="chips">
+      <span class="chip">HTTP/1.1（RFC 9110）</span><span class="chip">TCP</span><span class="chip">TLS</span><span class="chip">URI（RFC 3986）</span><span class="chip">Upgrade: websocket</span><span class="chip">text/event-stream</span>
+    </div>
+  </div>
+  <div class="base-card">
+    <h4>PYTHON BASE · 一个文件的机房</h4>
+    <div class="chips">
+      <span class="chip hot">fastapi</span><span class="chip hot">uvicorn</span><span class="chip hot">httpx</span><span class="chip">pydantic</span><span class="chip">websockets</span><span class="chip">asyncio</span>
+    </div>
+  </div>
+</div>
+
+<div class="foot">
+  <div>
+    <h4>THE EQUATION · 全文的公式</h4>
+    <p class="eq">一次服务 ＝ <b>REST</b> 进数据 ＋ <i>SSE</i> 出回答 ＋ WebSocket 承接实时<br/>选型 ＝ 给每一段交互找到它的线（接力分工，不是三选一）</p>
+    <p>状态码是对方的语气：404 别重试，429 按书歇脚，500 退避再来。礼貌是协议的一部分。</p>
+  </div>
+  <div>
+    <h4>OUT OF SCOPE · 这篇没解决的</h4>
+    <p>多实例下的会话亲和；语音帧编解码与回声消除；HTTP/3 上的 WebTransport（RFC 9224）家族。</p>
+    <p>四枚确定性小样与一个可跑的 FastAPI 文件，全文 online：<br/>starrysea1412.github.io/agent-signals</p>
+  </div>
+</div>
+<div class="stamp"><span>SIGNAL STATION 08 · DRAWN IN INK &amp; PHOSPHOR</span><b>造物手记 · VOL.08 · 2026.10</b></div>
+</body>
+</html>
